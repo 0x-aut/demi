@@ -1,49 +1,67 @@
 <script setup lang="ts">
-import { ref } from "vue";
 import { SmoothCorners } from "@lisse/vue";
 import {
-  Asterisk,
-  CircleUserRound,
-  ChevronLeft,
+  ChevronDown,
+  House,
   LassoSelect,
-  Blocks,
+  MessagesSquare,
+  GitPullRequestArrow,
+  Settings,
+  MessageSquareText,
 } from "@lucide/vue";
-
 
 const route = useRoute();
 
 const username = route.params.username as string;
+const workspace = route.params.workspace as string;
 
-const accountNavigation = [
+const workspaceNavigation = computed(() => [
   {
     name: "Home",
-    to: `/${username}/settings/account/profile`,
-    icon: CircleUserRound,
-    tooltip: "Edit important information about you",
+    to: `/${username}/${workspace}/home`,
+    icon: House,
+    tooltip: "Workspace home",
   },
   {
-    name: "Agent personalization",
-    to: `/${username}/settings/account/agent`,
+    name: "Agents",
+    to: `/${username}/${workspace}/agents`,
     icon: LassoSelect,
-    tooltip: "Give AI more context about you.",
+    tooltip: "View and manage agents",
   },
-];
-
-const featureNavigation = [
-  // {
-  //   name: "AI & Agents",
-  //   to: `/${username}/settings/ai`,
-  //   icon: Asterisk,
-  //   tooltip: "See AI use and edit created agents.",
-  // },
   {
-    name: "Integrations",
-    to: `/${username}/settings/integrations`,
-    icon: Blocks,
-    tooltip: "Add or remove integrations that your agents can access.",
+    name: "Sessions",
+    to: `/${username}/${workspace}/sessions`,
+    icon: MessagesSquare,
+    tooltip: "Browse past sessions",
   },
-];
+  {
+    name: "Review",
+    to: `/${username}/${workspace}/review`,
+    icon: GitPullRequestArrow,
+    tooltip: "Review agent activity",
+  },
+]);
 
+const settingsNavigation = computed(() => [
+  {
+    name: "Settings",
+    to: `/${username}/${workspace}/settings`,
+    icon: Settings,
+    tooltip: "Workspace settings",
+  },
+]);
+
+// Recent sessions — placeholder for future chats saved as sessions
+const recentOpen = ref(true);
+
+type RecentSession = {
+  id: string;
+  title: string;
+  to: string;
+};
+
+// Empty for now — future sessions will be populated here
+const recentSessions = ref<RecentSession[]>([]);
 </script>
 
 <template>
@@ -59,34 +77,41 @@ const featureNavigation = [
         >
           <button
             type="button"
-            class="flex group items-center gap-x-1 px-1.5 py-0.75 transition-colors duration-100 hover:bg-[#EBEBEB]"
-            @click="navigateTo(`/${username}/agent/`)"
+            class="flex group items-center gap-x-1.5 px-1 py-0.75 transition-colors duration-100 hover:bg-[#EBEBEB]"
           >
-            <div
-              class="flex items-center justify-center"
+            <!-- Squircle avatar -->
+            <SmoothCorners
+              as-child
+              :corners="{ radius: 7, smoothing: 1 }"
             >
-              <ChevronLeft 
-                :size="15" 
-                :stroke-width="1.5"
-                class="text-[#6B6B6B] duration-100 group-hover:text-[#121212]"
-              />
-            </div>
-            <div class="flex items-center pr-0.5">
-              <span
-                class="font-sans text-sm font-medium text-[#6B6B6B] group-hover:text-[#121212] duration-100"
+              <div
+                class="flex h-6 w-6 shrink-0 items-center justify-center bg-[#4169E1]"
               >
-                Back to app
-              </span>
-            </div>
+                <span class="font-sans text-xs font-semibold leading-none text-white">
+                  M
+                </span>
+              </div>
+            </SmoothCorners>
+            <!-- Name -->
+            <span
+              class="font-sans text-sm font-medium text-[#6B6B6B] group-hover:text-[#121212] duration-100"
+            >
+              Marvellous
+            </span>
+            <!-- Dropdown chevron -->
+            <ChevronDown
+              :size="14"
+              :stroke-width="1.5"
+              class="text-[#6B6B6B] duration-100 group-hover:text-[#121212]"
+            />
           </button>
         </SmoothCorners>
       </div>
 
       <!-- NAVIGATION -->
       <nav class="flex flex-col gap-y-0.5">
-        <span class="unmodified-font-sans text-sm font-medium text-[#5F5F5F] px-2.5 cursor-default">Account</span>
         <div
-          v-for="item in accountNavigation"
+          v-for="item in workspaceNavigation"
           :key="item.to"
           class="relative group"
         >
@@ -98,7 +123,7 @@ const featureNavigation = [
               :to="item.to"
               :class="[
                 'flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
-                route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                route.path === item.to || route.path.startsWith(item.to)
                   ? 'bg-[#E3E3E3]'
                   : 'hover:bg-[#EBEBEB]'
               ]"
@@ -109,7 +134,7 @@ const featureNavigation = [
                 :stroke-width="1.8"
                 :class="[
                   'transition-colors duration-100',
-                  route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                  route.path === item.to || route.path.startsWith(item.to)
                     ? 'text-[#121212]'
                     : 'text-[#6B6B6B] group-hover:text-[#121212]'
                 ]"
@@ -117,7 +142,7 @@ const featureNavigation = [
               <span
                 :class="[
                   'unmodified-font-sans text-sm font-normal transition-colors duration-100',
-                  route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                  route.path === item.to || route.path.startsWith(item.to)
                     ? 'text-[#121212]'
                     : 'text-[#6B6B6B] group-hover:text-[#121212]'
                 ]"
@@ -130,10 +155,85 @@ const featureNavigation = [
         </div>
       </nav>
 
-      <nav class="flex flex-col gap-y-0.5 mt-3">
-        <span class="unmodified-font-sans text-sm font-medium text-[#5F5F5F] px-2.5 cursor-default">Features</span>
+      <!-- RECENT SESSIONS -->
+      <div class="mt-6 flex flex-col gap-y-1">
+        <!-- Section header toggle -->
+        <button
+          type="button"
+          class="group flex items-center justify-between px-2.5 py-0.5 transition-colors duration-100"
+          @click="recentOpen = !recentOpen"
+        >
+          <span class="unmodified-font-sans text-xs font-medium text-[#9A9A9A] transition-colors duration-100 group-hover:text-[#6B6B6B]">
+            Recent
+          </span>
+          <ChevronDown
+            :size="12"
+            :stroke-width="2"
+            :class="[
+              'text-[#9A9A9A] transition-all duration-150 group-hover:text-[#6B6B6B]',
+              recentOpen ? 'rotate-0' : '-rotate-90'
+            ]"
+          />
+        </button>
+
+        <!-- Session list (collapsible) -->
+        <Transition
+          enter-active-class="transition-all duration-150 ease-out overflow-hidden"
+          enter-from-class="opacity-0 max-h-0"
+          enter-to-class="opacity-100 max-h-96"
+          leave-active-class="transition-all duration-100 ease-in overflow-hidden"
+          leave-from-class="opacity-100 max-h-96"
+          leave-to-class="opacity-0 max-h-0"
+        >
+          <div v-if="recentOpen" class="flex flex-col gap-y-0.5">
+            <template v-if="recentSessions.length > 0">
+              <SmoothCorners
+                v-for="session in recentSessions"
+                :key="session.id"
+                as-child
+                :corners="{ radius: 10, smoothing: 0.6 }"
+              >
+                <NuxtLink
+                  :to="session.to"
+                  :class="[
+                    'group flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
+                    route.path === session.to ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]'
+                  ]"
+                >
+                  <MessageSquareText
+                    :size="14"
+                    :stroke-width="1.8"
+                    :class="[
+                      'shrink-0 transition-colors duration-100',
+                      route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
+                    ]"
+                  />
+                  <span
+                    :class="[
+                      'unmodified-font-sans truncate text-sm font-normal transition-colors duration-100',
+                      route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
+                    ]"
+                  >
+                    {{ session.title }}
+                  </span>
+                </NuxtLink>
+              </SmoothCorners>
+            </template>
+
+            <!-- Empty state -->
+            <p
+              v-else
+              class="unmodified-font-sans px-2.5 py-1 text-xs text-[#BBBBBB]"
+            >
+              No recent sessions yet.
+            </p>
+          </div>
+        </Transition>
+      </div>
+
+      <nav class="flex flex-col gap-y-0.5 mt-auto">
         <div
-          v-for="item in featureNavigation"
+          v-for="item in settingsNavigation"
           :key="item.to"
           class="relative group"
         >
@@ -145,7 +245,7 @@ const featureNavigation = [
               :to="item.to"
               :class="[
                 'flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
-                route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                route.path === item.to || route.path.startsWith(item.to)
                   ? 'bg-[#E3E3E3]'
                   : 'hover:bg-[#EBEBEB]'
               ]"
@@ -156,7 +256,7 @@ const featureNavigation = [
                 :stroke-width="1.8"
                 :class="[
                   'transition-colors duration-100',
-                  route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                  route.path === item.to || route.path.startsWith(item.to)
                     ? 'text-[#121212]'
                     : 'text-[#6B6B6B] group-hover:text-[#121212]'
                 ]"
@@ -164,7 +264,7 @@ const featureNavigation = [
               <span
                 :class="[
                   'unmodified-font-sans text-sm font-normal transition-colors duration-100',
-                  route.path === item.to || (item.to !== `/${username}/agent` && route.path.startsWith(item.to))
+                  route.path === item.to || route.path.startsWith(item.to)
                     ? 'text-[#121212]'
                     : 'text-[#6B6B6B] group-hover:text-[#121212]'
                 ]"

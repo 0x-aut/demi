@@ -1,4 +1,4 @@
-import { useSession } from "@@/lib/auth-client";
+import { authClient } from "@@/lib/auth-client";
 
 export default defineNuxtRouteMiddleware(async (to) => {
   const publicRoutes = ["/", "/signin", "/signup"];
@@ -7,9 +7,9 @@ export default defineNuxtRouteMiddleware(async (to) => {
     return;
   }
 
-  const { data: session } = await useSession(useFetch);
+  const { data: session } = await authClient.useSession(useFetch);
 
-  if (!session.value) {
+  if (!session) {
     return navigateTo("/signin");
   }
 });

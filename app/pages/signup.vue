@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { signUp } from "@@/lib/auth-client";
+import { signUp, signIn, authClient } from "@@/lib/auth-client";
 
 useSeoMeta({
   title: "Signup"
@@ -10,7 +10,6 @@ const userEmail = ref<string>("");
 const userPassword = ref<string>("");
 const confirmPassword = ref<string>("");
 const usernameInput = ref<string>("");
-const stateInput = ref<string>("");
 
 var isLoading = ref<boolean>(false)
 
@@ -28,8 +27,6 @@ async function userSignUp() {
     name: fullName.value,
     username: usernameInput.value,
     displayUsername: displayName,
-    country: "US",
-    state: stateInput.value,
   }, {
     onRequest: (ctx) => {
       isLoading.value = true
@@ -76,12 +73,6 @@ async function userSignUp() {
           <label for="username" class="font-sans font-normal text-sm">Username</label>
           <input v-model="usernameInput" type="text" required placeholder="Enter your preferred username" class="font-sans focus:border-2 duration-50 ease-in-out focus:border-[#273BE2] w-full text-sm outline-0 border-0 bg-[#F2F2F2] p-1.5 rounded-sm" />
         </div>
-        <div class="w-full flex flex-col gap-y-0.5">
-          <label for="state" class="font-sans font-normal text-sm">
-            State <span class="text-xs unmodified-font-sans font-normal">(Witness only supports US for now)</span>
-          </label>
-          <UIElementsStateSelect id="state" v-model="stateInput" required />
-        </div>
         <div class="w-full flex justify-between items-center gap-x-7.5">
           <div>
             <label for="password" class="font-sans font-normal text-sm">Password</label>
@@ -96,6 +87,29 @@ async function userSignUp() {
           <Loader v-if="isLoading" />
           <span v-else class="font-sans font-semibold text-sm text-[#FFFFFF]">Sign up</span>
         </button>
+        <!-- SOCIAL SIGN UP (re-enable when ready)
+        <div class="flex items-center w-full gap-x-3">
+          <hr class="flex-1 border-[#D9D9D9]" />
+          <span class="font-sans text-xs text-[#555555]">or</span>
+          <hr class="flex-1 border-[#D9D9D9]" />
+        </div>
+        <div class="flex flex-col w-full gap-y-2.5">
+          <button
+            class="w-full border border-[#D9D9D9] rounded-sm flex items-center justify-center gap-x-2.5 py-1.5 bg-white hover:bg-[#F2F2F2] transition-colors duration-150"
+            @click="signIn.social({ provider: 'github', callbackURL: '/' })"
+          >
+            <NuxtImg src="github-logo.svg" alt="GitHub" width="16" height="16" />
+            <span class="font-sans font-medium text-sm text-[#121212]">Continue with GitHub</span>
+          </button>
+          <button
+            class="w-full border border-[#D9D9D9] rounded-sm flex items-center justify-center gap-x-2.5 py-1.5 bg-white hover:bg-[#F2F2F2] transition-colors duration-150"
+            @click="signIn.social({ provider: 'google', callbackURL: '/' })"
+          >
+            <NuxtImg src="google-logo.svg" alt="Google" width="16" height="16" />
+            <span class="font-sans font-medium text-sm text-[#121212]">Continue with Google</span>
+          </button>
+        </div>
+        END SOCIAL SIGN UP -->
         <section class="flex w-full justify-between items-center -mt-2.5">
           <span class="font-sans text-xs text-[#555555]">
             Don't have an account? <NuxtLink to="/signin"><span class="text-[#121212]">Sign in</span></NuxtLink>

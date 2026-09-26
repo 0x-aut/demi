@@ -12,6 +12,14 @@ export default defineNuxtConfig({
 
   css: ['@/assets/css/main.css'],
 
+  runtimeConfig: {
+    githubClientSecret: process.env.GITHUB_CLIENT_SECRET,
+    githubClientKey: process.env.GITHUB_CLIENT_ID,
+    betterAuthSecret: '',
+    betterAuthUrl: '',
+    openaiApiKey: process.env.OPENAI_API_KEY,
+  },
+
   fonts: {
     families: [
       { name: 'Switzer', provider: 'fontshare', weights: [400, 500, 600, 700], styles: ['normal', 'italic'] },

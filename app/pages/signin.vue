@@ -59,6 +59,29 @@ async function userSignIn() {
           <Loader v-if="isLoading" />
           <span v-else class="font-sans font-semibold text-sm text-[#FFFFFF]">Sign in</span>
         </button>
+        <!-- SOCIAL SIGN IN (re-enable when ready)
+        <div class="flex items-center w-full gap-x-3">
+          <hr class="flex-1 border-[#D9D9D9]" />
+          <span class="font-sans text-xs text-[#555555]">or</span>
+          <hr class="flex-1 border-[#D9D9D9]" />
+        </div>
+        <div class="flex flex-col w-full gap-y-2.5">
+          <button
+            class="w-full border border-[#D9D9D9] rounded-sm flex items-center justify-center gap-x-2.5 py-1.5 bg-white hover:bg-[#F2F2F2] transition-colors duration-150"
+            @click="signIn.social({ provider: 'github', callbackURL: '/' })"
+          >
+            <NuxtImg src="github-logo.svg" alt="GitHub" width="16" height="16" />
+            <span class="font-sans font-medium text-sm text-[#121212]">Continue with GitHub</span>
+          </button>
+          <button
+            class="w-full border border-[#D9D9D9] rounded-sm flex items-center justify-center gap-x-2.5 py-1.5 bg-white hover:bg-[#F2F2F2] transition-colors duration-150"
+            @click="signIn.social({ provider: 'google', callbackURL: '/' })"
+          >
+            <NuxtImg src="google-logo.svg" alt="Google" width="16" height="16" />
+            <span class="font-sans font-medium text-sm text-[#121212]">Continue with Google</span>
+          </button>
+        </div>
+        END SOCIAL SIGN IN -->
         <section class="flex w-full justify-between items-center -mt-2.5">
           <span class="font-sans text-xs text-[#555555]">
             Don't have an account? <NuxtLink to="/signup"><span class="text-[#121212]">Sign up</span></NuxtLink>
