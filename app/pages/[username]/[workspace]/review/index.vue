@@ -424,4 +424,4 @@ const statusConfig: Record<
       </div>
     </div>
   </div>
-</templa
+</template>
