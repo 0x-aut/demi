@@ -38,7 +38,7 @@ type ReviewResponse = {
 }
 
 const route = useRoute()
-const workspaceId = route.params.workspace as string
+const workspaceId = computed(() => String(route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
 
 const pullRequests = ref<PullRequest[]>([])
 const isLoading = ref(true)
@@ -51,7 +51,7 @@ async function loadPullRequests() {
 
   try {
     const response = await $fetch<ReviewResponse>("/api/review", {
-      query: { workspaceId },
+      query: { workspaceId: workspaceId.value },
     })
 
     pullRequests.value = response.pullRequests
