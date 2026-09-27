@@ -8,6 +8,7 @@ import {
   FileCode2,
   Settings,
   MessageSquareText,
+  LogOut,
 } from "@lucide/vue";
 
 const route = useRoute();
@@ -53,6 +54,12 @@ const settingsNavigation = computed(() => [
 ]);
 
 const recentOpen = ref(true);
+const accountOpen = ref(false);
+
+async function handleSignOut() {
+  accountOpen.value = false;
+  await authClient.signOut({ fetchOptions: { onSuccess: () => navigateTo("/signin") } });
+}
 
 type RecentSession = {
   id: string;
@@ -68,11 +75,12 @@ const recentSessions = ref<RecentSession[]>([]);
     class="unmodified-font-sans flex h-screen w-full justify-start bg-[#F4F4F4] p-2.5"
   >
     <aside class="flex w-55 shrink-0 flex-col py-2.5 pr-2.5 max-md:hidden">
-      <div class="mb-5 flex items-center justify-between">
+      <div class="relative mb-5 flex items-center justify-between">
         <SmoothCorners as-child :corners="{ radius: 999 }">
           <button
             type="button"
             class="flex group items-center gap-x-1.5 px-1 py-0.75 transition-colors duration-100 hover:bg-[#EBEBEB]"
+            @click="accountOpen = !accountOpen"
           >
             <SmoothCorners as-child :corners="{ radius: 7, smoothing: 1 }">
               <div class="flex h-6 w-6 shrink-0 items-center justify-center bg-[#4169E1]">
@@ -87,6 +95,32 @@ const recentSessions = ref<RecentSession[]>([]);
             <ChevronDown :size="14" :stroke-width="1.5" class="text-[#6B6B6B] duration-100 group-hover:text-[#121212]" />
           </button>
         </SmoothCorners>
+
+        <Transition
+          enter-active-class="transition-all duration-150 ease-out"
+          enter-from-class="opacity-0 -translate-y-1 scale-95"
+          enter-to-class="opacity-100 translate-y-0 scale-100"
+          leave-active-class="transition-all duration-100 ease-in"
+          leave-from-class="opacity-100 translate-y-0 scale-100"
+          leave-to-class="opacity-0 -translate-y-1 scale-95"
+        >
+          <SmoothCorners
+            v-if="accountOpen"
+            as-child
+            :corners="{ radius: 10, smoothing: 0.6 }"
+          >
+            <div class="absolute left-0 top-9 z-50 w-52 border border-[#E3E3E3] bg-white p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
+              <button
+                type="button"
+                class="group flex w-full items-center gap-x-2 px-2.5 py-2 text-left transition-colors duration-100 hover:bg-[#F2F2F2]"
+                @click="handleSignOut"
+              >
+                <LogOut :size="14" :stroke-width="1.8" class="text-[#6B6B6B] group-hover:text-[#121212]" />
+                <span class="unmodified-font-sans text-sm text-[#6B6B6B] group-hover:text-[#121212]">Sign out</span>
+              </button>
+            </div>
+          </SmoothCorners>
+        </Transition>
       </div>
 
       <nav class="flex flex-col gap-y-0.5">
