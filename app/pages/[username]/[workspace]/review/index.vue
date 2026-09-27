@@ -326,10 +326,8 @@ const statusConfig: Record<
           as-child
           :corners="{ radius: 12, smoothing: 0.6 }"
         >
-          <a
-            :href="pr.url"
-            target="_blank"
-            rel="noopener noreferrer"
+          <NuxtLink
+            :to="`/${route.params.username}/${workspaceId}/review/${pr.number}`"
             class="group block cursor-pointer border border-[#E3E3E3] bg-white px-5 py-4 transition-colors duration-100 hover:bg-[#FAFAFA]"
           >
             <div class="flex items-start justify-between gap-x-4">
@@ -419,7 +417,7 @@ const statusConfig: Record<
                 comment{{ pr.commentsCount !== 1 ? "s" : "" }}
               </span>
             </div>
-          </a>
+          </NuxtLink>
         </SmoothCorners>
       </div>
     </div>
