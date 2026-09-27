@@ -55,6 +55,39 @@ function handleKeyDown(e: KeyboardEvent) {
   }
 }
 
+
+const approvingProposal = ref<number | null>(null)
+
+async function approveProposal(proposal: ChangeProposal, messageId: number) {
+  if (!props.workspaceId || approvingProposal.value !== null) return
+
+  approvingProposal.value = messageId
+
+  try {
+    const result = await $fetch("/api/change/approve", {
+      method: "POST",
+      body: {
+        workspaceId: props.workspaceId,
+        proposal,
+      },
+    })
+
+    const msg = messages.value.find(m => m.id === messageId)
+
+    if (msg) {
+      msg.content = `${msg.content}\n\nDone — I created [PR #${result.pullRequest.number}](${result.pullRequest.url}).`
+      delete msg.proposal
+    }
+  } catch (error) {
+    requestError.value = error instanceof Error
+      ? error.message
+      : "Demi could not create the pull request."
+  } finally {
+    approvingProposal.value = null
+  }
+}
+
+
 watch(messages, scrollToBottom, { deep: true })
 
 onMounted(() => textareaRef.value?.focus())
@@ -106,6 +139,8 @@ onBeforeUnmount(() => abort())
             <AppsChangeProposalCard
               v-if="msg.proposal"
               :proposal="msg.proposal"
+              @approve="approveProposal(msg.proposal, msg.id)"
+              :class="{ 'pointer-events-none opacity-60': approvingProposal === msg.id }"
             />
           </div>
         </div>

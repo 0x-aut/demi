@@ -6,6 +6,10 @@ defineProps<{
   proposal: ChangeProposal
 }>()
 
+const emit = defineEmits<{
+  approve: []
+}>()
+
 const actionLabel: Record<string, string> = {
   create: "Create",
   modify: "Modify",
@@ -68,5 +72,12 @@ const actionClass: Record<string, string> = {
         </div>
       </li>
     </ul>
+    <button
+      type="button"
+      class="mt-3 w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-medium text-white transition-opacity hover:opacity-85"
+      @click="emit('approve')"
+    >
+      Approve & create PR
+    </button>
   </div>
 </template>

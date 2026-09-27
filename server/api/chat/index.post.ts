@@ -223,11 +223,8 @@ export default defineEventHandler(async (event) => {
 
   // ── Extract proposal (if any) and emit as dedicated SSE event ─────────────
   const proposal = extractProposal(reply);
-  if (proposal) {
-    // Strip the raw JSON block from the persisted text — keep only the prose
-    reply = stripProposalBlock(reply);
-    sseEvent(nodeRes, "proposal", { proposal });
-  }
+
+  if (proposal) proposal.request = prompt;
 
   // ── Persist assistant reply ────────────────────────────────────────────────
   await appendChatMessage(activeSessionId, "assistant", reply);

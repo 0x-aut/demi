@@ -22,10 +22,8 @@ export interface ChangeFileEntry {
 }
 
 export interface ChangeProposal {
-  /** One-line summary of the overall change */
   summary: string
-  /** Why this change is needed / what problem it solves */
   reason: string
-  /** File-level plan entries */
   files: ChangeFileEntry[]
+  request?: string
 }

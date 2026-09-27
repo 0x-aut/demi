@@ -9,6 +9,11 @@ export const auth = betterAuth({
     ssl: { rejectUnauthorized: false },
   }),
 
+  trustedOrigins: [
+    'https://demi-ashy.vercel.app', 'localhost:8000',
+    ...(process.env.VERCEL_URL ? [`https://${process.env.VERCEL_URL}`] : [])
+  ],
+
   emailAndPassword: {
     enabled: true,
   },

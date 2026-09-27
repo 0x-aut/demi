@@ -13,6 +13,7 @@ export interface ChangeProposal {
   summary: string
   reason: string
   files: ChangeFileEntry[]
+  request?: string
 }
 
 export interface ChatMessage {
