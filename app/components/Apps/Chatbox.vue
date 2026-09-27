@@ -58,7 +58,6 @@ function handleKeyDown(e: KeyboardEvent) {
   }
 }
 
-
 const proposalStates = ref<Record<number, { state: 'loading' | 'success'; pullRequest?: { number: number; url: string; title: string } }>>({})
 
 async function approveProposal(proposal: ChangeProposal, messageId: number) {
@@ -88,7 +87,6 @@ async function approveProposal(proposal: ChangeProposal, messageId: number) {
     if (proposalStates.value[messageId]?.state === 'loading') delete proposalStates.value[messageId]
   }
 }
-
 
 watch(messages, scrollToBottom, { deep: true })
 
@@ -129,15 +127,10 @@ onBeforeUnmount(() => abort())
           :class="msg.role === 'user' ? 'flex justify-end' : 'flex justify-start'"
         >
           <!-- User bubble -->
-          <SmoothCorners
+          <ElementsUserMessageBubble
             v-if="msg.role === 'user'"
-            as-child
-            :corners="{ topLeft: 18, topRight: 18, bottomLeft: 18, bottomRight: 4, smoothing: 0.6 }"
-          >
-            <span class="max-w-[75%] whitespace-pre-wrap font-sans px-3.5 py-2.5 text-sm leading-6 bg-[#0A84FF] text-white">
-              {{ msg.content }}
-            </span>
-          </SmoothCorners>
+            :content="msg.content"
+          />
 
           <!-- Assistant bubble — Markdown rendered, streams token-by-token -->
           <div v-else class="flex max-w-[85%] flex-col">
