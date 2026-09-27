@@ -227,11 +227,15 @@ export default defineEventHandler(async (event) => {
   if (proposal) proposal.request = prompt;
 
   // ── Persist assistant reply ────────────────────────────────────────────────
-  await appendChatMessage(activeSessionId, "assistant", reply);
+  const visibleReply = proposal ? stripProposalBlock(reply) : reply;
+
+  if (proposal) sseEvent(nodeRes, "proposal", { proposal });
+
+  await appendChatMessage(activeSessionId, "assistant", visibleReply);
 
   await db
     .update(chatSession)
-    .set({ lastMessagePreview: reply.slice(0, 120), updatedAt: new Date() })
+    .set({ lastMessagePreview: visibleReply.slice(0, 120), updatedAt: new Date() })
     .where(eq(chatSession.id, activeSessionId));
 
   sseEvent(nodeRes, "done", { sessionId: activeSessionId });
