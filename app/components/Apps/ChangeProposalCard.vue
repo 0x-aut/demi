@@ -2,8 +2,11 @@
 import type { ChangeProposal } from "~/composables/useChat"
 // ChangeProposal is defined and exported from the composable
 
-defineProps<{
+//
+const props = defineProps<{
   proposal: ChangeProposal
+  state?: "idle" | "loading" | "success"
+  pullRequest?: { number: number; url: string; title: string }
 }>()
 
 const emit = defineEmits<{
@@ -72,12 +75,22 @@ const actionClass: Record<string, string> = {
         </div>
       </li>
     </ul>
+    <div v-if="props.state === 'success' && props.pullRequest" class="mt-3 rounded-xl border border-[#DDE9DF] bg-[#F3F8F4] p-3">
+      <div class="flex items-center gap-x-2">
+        <span class="flex h-5 w-5 items-center justify-center rounded-full bg-[#DFF1E2] text-[#2D7A2D]">✓</span>
+        <p class="text-xs font-medium text-[#2D7A2D]">PR #{{ props.pullRequest.number }} created</p>
+      </div>
+      <p class="mt-1 truncate text-xs text-[#57606a]">{{ props.pullRequest.title }}</p>
+      <a :href="props.pullRequest.url" target="_blank" rel="noopener noreferrer" class="mt-2 inline-block text-xs font-medium text-[#121212] underline underline-offset-2">View pull request</a>
+    </div>
     <button
+      v-else
       type="button"
-      class="mt-3 w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-medium text-white transition-opacity hover:opacity-85"
+      :disabled="props.state === 'loading'"
+      class="mt-3 w-full rounded-xl bg-[#121212] px-3 py-2.5 text-xs font-medium text-white transition-opacity hover:opacity-85 disabled:cursor-wait disabled:opacity-60"
       @click="emit('approve')"
     >
-      Approve & create PR
+      {{ props.state === 'loading' ? 'Creating PR…' : 'Approve & create PR' }}
     </button>
   </div>
 </template>
