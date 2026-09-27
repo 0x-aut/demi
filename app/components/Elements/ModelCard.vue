@@ -2,45 +2,62 @@
 import { SmoothCorners } from "@lisse/vue"
 import { ChevronDown, Check } from "@lucide/vue"
 
-const MODELS = [
-  "ChatGPT Sol 5.1",
-  "ChatGPT Astra 6",
-  "ChatGPT Luna 5.1",
+const emit = defineEmits<{ select: [model: string] }>()
+
+// Maps display labels → actual OpenAI model IDs
+const MODELS: { label: string; id: string }[] = [
+  { label: "GPT-4o",       id: "gpt-4o" },
+  { label: "GPT-4o mini",  id: "gpt-4o-mini" },
+  { label: "GPT-4 Turbo",  id: "gpt-4-turbo" },
 ]
 
-const selectedModel = ref(MODELS[0])
-const isOpen = ref(false)
-const pillRef = ref<HTMLButtonElement | null>(null)
-const dropdownRef = ref<HTMLDivElement | null>(null)
-const openAbove = ref(false)
+const selected  = ref(MODELS[0]!)
+const isOpen    = ref(false)
+const pillRef   = ref<HTMLButtonElement | null>(null)
+const dropdownRef = ref<HTMLElement | null>(null)
 
-const DROPDOWN_MIN_HEIGHT = 120
+// Teleported dropdown position (fixed, relative to viewport)
+const dropdownStyle = ref<Record<string, string>>({})
 
 function calculatePosition() {
   const pill = pillRef.value
   if (!pill) return
 
-  const rect = pill.getBoundingClientRect()
-  const spaceBelow = window.innerHeight - rect.bottom
-  const spaceAbove = rect.top
+  const rect        = pill.getBoundingClientRect()
+  const DROPDOWN_H  = 120          // estimated dropdown height
+  const GAP         = 6            // gap between pill and dropdown
+  const spaceBelow  = window.innerHeight - rect.bottom
 
-  openAbove.value =
-    spaceBelow < DROPDOWN_MIN_HEIGHT && spaceAbove > spaceBelow
-}
-
-async function toggleDropdown() {
-  if (!isOpen.value) {
-    calculatePosition()
-    isOpen.value = true
-    await nextTick()
+  if (spaceBelow < DROPDOWN_H && rect.top > spaceBelow) {
+    // Open above
+    dropdownStyle.value = {
+      position:  "fixed",
+      bottom:    `${window.innerHeight - rect.top + GAP}px`,
+      right:     `${window.innerWidth  - rect.right}px`,
+    }
   } else {
-    isOpen.value = false
+    // Open below
+    dropdownStyle.value = {
+      position: "fixed",
+      top:      `${rect.bottom + GAP}px`,
+      right:    `${window.innerWidth - rect.right}px`,
+    }
   }
 }
 
-function selectModel(model: string) {
-  selectedModel.value = model
-  isOpen.value = false
+function toggleDropdown() {
+  if (isOpen.value) {
+    isOpen.value = false
+  } else {
+    calculatePosition()
+    isOpen.value = true
+  }
+}
+
+function selectModel(model: { label: string; id: string }) {
+  selected.value = model
+  isOpen.value   = false
+  emit("select", model.id)
 }
 
 function handleOutsideClick(event: MouseEvent) {
@@ -52,37 +69,35 @@ function handleOutsideClick(event: MouseEvent) {
   isOpen.value = false
 }
 
-onMounted(() => document.addEventListener("mousedown", handleOutsideClick))
+onMounted(() => {
+  document.addEventListener("mousedown", handleOutsideClick)
+  emit("select", selected.value.id)
+})
 onUnmounted(() => document.removeEventListener("mousedown", handleOutsideClick))
 </script>
 
 <template>
-  <div class="relative">
-    <!-- Pill trigger -->
-    <SmoothCorners
-      as-child
-      :corners="{ radius: 999 }"
-    >
-      <button
-        ref="pillRef"
-        type="button"
-        :aria-expanded="isOpen"
-        aria-haspopup="listbox"
-        class="group flex items-center gap-x-1 bg-[#F4F4F4] px-2.5 py-1 transition-colors duration-100 hover:bg-[#EBEBEB]"
-        @click="toggleDropdown"
-      >
-        <span class="font-sans text-xs font-medium text-[#6B6B6B] transition-colors duration-100 group-hover:text-[#121212]">
-          {{ selectedModel }}
-        </span>
-        <ChevronDown
-          :size="12"
-          :stroke-width="1.8"
-          class="text-[#6B6B6B] transition-colors duration-100 group-hover:text-[#121212]"
-        />
-      </button>
-    </SmoothCorners>
+  <!-- Pill trigger -->
+  <button
+    ref="pillRef"
+    type="button"
+    :aria-expanded="isOpen"
+    aria-haspopup="listbox"
+    class="group flex items-center gap-x-1 rounded-full bg-[#F4F4F4] px-2.5 py-1 transition-colors duration-100 hover:bg-[#EBEBEB]"
+    @click="toggleDropdown"
+  >
+    <span class="font-sans text-xs font-medium text-[#6B6B6B] transition-colors duration-100 group-hover:text-[#121212]">
+      {{ selected.label }}
+    </span>
+    <ChevronDown
+      :size="12"
+      :stroke-width="1.8"
+      class="text-[#6B6B6B] transition-colors duration-100 group-hover:text-[#121212]"
+    />
+  </button>
 
-    <!-- Dropdown -->
+  <!-- Dropdown — teleported to body to escape any overflow/clip ancestor -->
+  <Teleport to="body">
     <Transition
       enter-active-class="transition-all duration-100 ease-out"
       enter-from-class="opacity-0 scale-95"
@@ -93,37 +108,35 @@ onUnmounted(() => document.removeEventListener("mousedown", handleOutsideClick))
     >
       <SmoothCorners
         v-if="isOpen"
-        ref="dropdownRef"
         as-child
         :corners="{ radius: 12, smoothing: 0.6 }"
       >
         <div
+          ref="dropdownRef"
           role="listbox"
-          :aria-label="'Select model'"
-          :class="[
-            'absolute z-50 min-w-[160px] border border-[#E3E3E3] bg-[#FFFFFF] py-1 shadow-sm',
-            openAbove ? 'bottom-full mb-1.5 origin-bottom' : 'top-full mt-1.5 origin-top'
-          ]"
+          aria-label="Select model"
+          :style="dropdownStyle"
+          class="z-[9999] min-w-[160px] border border-[#E3E3E3] bg-[#FFFFFF] py-1 shadow-md"
         >
           <button
             v-for="model in MODELS"
-            :key="model"
+            :key="model.id"
             type="button"
             role="option"
-            :aria-selected="selectedModel === model"
+            :aria-selected="selected.id === model.id"
             class="group flex w-full items-center justify-between gap-x-2 px-3 py-1.5 transition-colors duration-100 hover:bg-[#F4F4F4]"
             @click="selectModel(model)"
           >
             <span
               :class="[
                 'font-sans text-sm transition-colors duration-100',
-                selectedModel === model ? 'font-medium text-[#121212]' : 'font-normal text-[#6B6B6B] group-hover:text-[#121212]'
+                selected.id === model.id ? 'font-medium text-[#121212]' : 'font-normal text-[#6B6B6B] group-hover:text-[#121212]'
               ]"
             >
-              {{ model }}
+              {{ model.label }}
             </span>
             <Check
-              v-if="selectedModel === model"
+              v-if="selected.id === model.id"
               :size="12"
               :stroke-width="2"
               class="shrink-0 text-[#121212]"
@@ -132,5 +145,5 @@ onUnmounted(() => document.removeEventListener("mousedown", handleOutsideClick))
         </div>
       </SmoothCorners>
     </Transition>
-  </div>
+  </Teleport>
 </template>

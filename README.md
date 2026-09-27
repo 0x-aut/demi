@@ -1,6 +1,6 @@
-# Demideus (Demi) — Agent Context README
+# Demi — Agent Context README
 
-> This README is written in a compressed notation for AI coding agents. Read `§0 Legend` first — every symbol maps to one exact meaning. Precision > prose.
+> Compressed notation for AI coding agents. Read `§0 Legend` first — every symbol maps to one exact meaning. Precision > prose.
 
 ---
 
@@ -10,85 +10,65 @@
 |---|---|
 | `→` | produces / transforms into |
 | `⇒` | triggers / causes |
-| `⊕` | combined with (both parts required together) |
+| `⊕` | combined with (both required together) |
 | `∥` | runs in parallel with |
-| `?` | optional / stretch scope, not MVP |
-| `!` | MVP-critical, build this first |
+| `?` | future / undecided scope, not MVP |
+| `!` | MVP-critical |
 | `U` | the developer using Demi |
-| `R` | a GitHub repo `U` connects to Demi |
-| `S(U)` | `U`'s declared scope (e.g. `frontend`, `backend`, `junior`, `infra`) — a filter, not a role label |
-| `Bob(R)` | Bob IDE's generated output for `R` |
+| `R` | a GitHub repo `U` connects |
+| `S(U)` | `U`'s declared scope filter (e.g. `frontend`, `auth`, `payments`, a module) |
+| `[HITL]` | human-in-the-loop checkpoint — agent must not proceed past this without `U` approval |
 
 ---
 
 ## §1 What Demi is (one line)
 
-`Demi := Dashboard(Bob(R)) ⊕ AgentLayer(explain, PR-gen, detect)` — a platform that turns a repo a developer has never seen into one they can navigate, understand at their scope, and safely ship fixes/features into, via AI agents.
+Demi is an AI-powered developer workspace that helps `U` understand an unfamiliar `R`, investigate issues, and coordinate agents to ship changes through pull requests.
 
-Built for: **IBM Bob 2.0 Hackathon** (Sep 25–27, 2026), solo dev, Nuxt.
+**Product thesis:** Demi turns an unfamiliar repo into an understandable, actionable workspace where `U` and AI agents work together to ship changes. Demi owns the *developer experience and workflow* — not any specific AI infrastructure underneath it. Infra is intentionally not locked in yet (§4).
 
-## §2 Core loop
+Context: built for **IBM Bob 2.0 Hackathon** (Sep 25–27, 2026), solo dev, Nuxt. Bob IDE is being used to *accelerate building Demi itself* — it is a dev-time tool here, not a required runtime dependency of the product.
+
+## §2 Core flow
 
 ```
-R → Bob(R) = {architecture.*, onboarding.*, triage.*}      ! (input contract — lock this shape early)
-Bob(R) × S(U) → Demi.render()                                ! scoped, navigable explanation UI
-Issue(R) → Agent(context = Bob(R) ⊕ diff-relevant files) → PR(R)   ! issue-to-PR pipeline
-R.codebase → Agent.scan() ⇒ Issue(R)                          ? proactive issue creation
-{Agent₁, Agent₂, …} ∥ on {part₁, part₂, …} of R               ? concurrent multi-agent PRs
-U.assignedIssues(R) → Tab.track() → U.triggers(fix|inspect)   ! issue tracking tab
+connect(R) → understand(R, S(U)) → issues(R, U) → investigate(issue) [HITL] → assign(agent(s)) →
+    agent: understand code ⊕ plan ⊕ modify files ⊕ run tests → [HITL] review → [HITL] approve → PR(R)
 ```
 
-Read top to bottom = build priority order. `!` rows are the demo spine; `?` rows are stretch.
+`[HITL]` appears three times deliberately: investigate, review, and approve are all points where `U` stays in control — agents don't merge unsupervised.
 
-## §3 Feature set (F1…F5)
+## §3 Feature set
 
-- **F1** `!` Repo onboarding dashboard: parse `Bob(R)`, render architecture/onboarding/triage as navigable UI.
-- **F2** `!` Scope-aware code explanation: same `Bob(R)` data, filtered/re-explained per `S(U)`.
-- **F3** `!` Issue → PR agent: takes a GitHub issue, generates a patch, opens PR on `R`.
-- **F4** `?` Proactive codebase scan → auto-files issues on `R`.
-- **F5** `?` Multi-agent concurrency: N agents on N code-areas simultaneously, visible status per agent.
-- **F6** `!` "My issues" tab: issues assigned to `U` across connected repos, action buttons → F3 or manual inspect.
+- **F1** `!` Codebase onboarding: explain `R` filtered by `S(U)` — architecture, auth, payments, or any specific module `U` cares about right now.
+- **F2** `!` Issue workspace: view + investigate issues assigned to `U`, inside Demi (no context-switch to GitHub UI).
+- **F3** `!` AI implementation agent: given an issue, agent investigates → understands relevant code → plans a solution → modifies files → runs tests → prepares a PR (does not auto-merge).
+- **F4** `!` Multi-agent work: multiple agents on different aspects of a task, concurrently.
+- **F5** `!` Human control: `U` monitors agent work in progress, can intervene mid-task, reviews diffs, approves before PR creation. This is a core feature, not a safety afterthought — treat `[HITL]` checkpoints in §2 as required, not optional UX polish.
+- **F6** `?` Future monitoring: Demi detects problems in `R` proactively, proposes or creates GitHub issues.
 
-## §4 Stack
+## §4 Infrastructure (deliberately not locked in)
 
-### 4.1 Core (locked in)
-| Layer | Choice |
+Demi's value = the workflow/UX layer. Everything below is swappable; do not hard-couple F1–F5 logic to one provider's API shape.
+
+| Layer | Status |
 |---|---|
-| Framework | Nuxt 3 (Vue 3, `<script setup>`, TS) |
-| Server | Nitro server routes (`server/api/*`) — all external calls (GitHub, watsonx) live here, never client-side |
-| Styling | Tailwind CSS |
-| State | Pinia |
-| Repo integration | GitHub REST/GraphQL via Octokit; GitHub OAuth App for `U` auth |
-| AI (F1–F3) | watsonx.ai (Granite models) — chat/text completion, called from Nitro routes |
+| Models | Undecided — OpenAI, watsonx.ai, or another provider. Keep behind one interface, e.g. `generate(prompt, context, tools?): result`, so swapping ≠ rewrite. |
+| Agent harness / orchestration | Undecided. Options to evaluate: build directly on a model's tool-calling (lightest), a framework (LangGraph, CrewAI), or watsonx Orchestrate (heaviest setup, only worth it if multi-agent (F4) needs real concurrent orchestration rather than parallel independent calls). |
+| Tools available to agents | GitHub API (Octokit) for repo read/write/PR, code execution/test-running sandbox, repo-tooling as needed. |
+| Demi's own layer | Nuxt 3 (Vue 3, TS), Nitro server routes for all external calls, Tailwind, Pinia. This layer is the actual product and stays stable regardless of §4 provider choices. |
 
-### 4.2 AI layer detail
-- `watsonx.ai` = default. One SDK/REST integration point (`server/utils/watsonx.ts`), reused for F1–F4. Auth = API key + project ID, env vars only, never client-exposed.
-- `watsonx Orchestrate` = `?` — only if F5 gets built for real (not mocked). Needs ADK + Developer Edition (Docker, Python 3.11+). High setup cost relative to hackathon time; do not start this before F1–F3 are demo-stable.
-- Fallback/alt model provider = keep the watsonx call behind a thin interface (`generate(prompt, context): string`) so swapping providers later ≠ rewrite.
+## §5 Non-negotiables for any agent editing this repo
 
-### 4.3 Possible additions (not yet decided — evaluate only if a feature needs it, don't pre-adopt)
-| Need | Candidate(s) |
-|---|---|
-| Persist scoped prefs / issue cache | SQLite (local/hackathon) → Postgres/Supabase (if it grows) |
-| Background PR-gen jobs (avoid blocking request) | Nitro tasks / BullMQ + Redis (only if F3 latency becomes a UX problem) |
-| Live agent status (F5) | SSE from Nitro route, or WebSocket if bidirectional needed |
-| Repo-change triggers (F4) | GitHub Webhooks → Nitro endpoint |
-| Alt multi-agent frameworks (if Orchestrate too heavy) | LangGraph, CrewAI — lighter-weight parallel-agent patterns, no Docker requirement |
-| Validation | Zod on all Nitro route inputs (issue payloads, webhook payloads) |
-| Hosting | Vercel/Netlify (fastest for Nuxt) or IBM Cloud Code Engine (stronger IBM-stack narrative for judging) |
+- Never wire F1–F5 UI/workflow logic directly to a specific model provider's SDK — always through the interface in §4, since the model choice is explicitly undecided.
+- Every `[HITL]` checkpoint in §2 must be a real UI gate (not a log line) — investigate, review, and approve are user actions, not agent-internal steps.
+- Any agent-modified files must be diffable and attributed to the issue that triggered them, before PR creation.
+- Secrets (GitHub token, model API keys) stay server-side (Nitro), never in the client bundle.
 
-## §5 Build order (as agreed, do not reorder without reason)
+## §6 Build order (as agreed)
 
-1. UI first (F1 shell) — use Bob itself to scaffold components/pages, hasten dev time.
-2. Wire F1 to real `Bob(R)` output shape — confirm structure before building against assumptions.
-3. F2 (scope filter on top of F1's data).
-4. F3 (issue → PR), single-agent, synchronous is fine for demo.
-5. F6 (issues tab) — mostly UI + GitHub API reads, cheap to add once F3 exists.
-6. F4/F5 only if time remains after 1–5 are demo-stable.
-
-## §6 Non-negotiables for any agent editing this repo
-
-- All secrets (GitHub token, watsonx API key/project ID) stay server-side (Nitro), never in client bundle.
-- `Bob(R)` parsing logic isolated in one module — if Bob's output shape changes, one file changes.
-- watsonx calls go through the single interface in §4.2 — no direct SDK calls scattered across routes.
-- Every AI-generated PR must be traceable to the source issue it was generated from (store issue ↔ PR link).
+1. UI first for F1 (onboarding) + F2 (issue workspace) — use Bob to scaffold components, hasten dev time.
+2. F3 single-agent, single-issue flow, with all three `[HITL]` gates real (even if agent logic is simple at first).
+3. F5 polish — monitoring/intervene UI, since it's a core differentiator, not stretch.
+4. F4 (multi-agent) once F3 is demo-stable.
+5. F6 only if time remains.

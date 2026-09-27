@@ -18,6 +18,9 @@ export default defineNuxtConfig({
     betterAuthSecret: '',
     betterAuthUrl: '',
     openaiApiKey: process.env.OPENAI_API_KEY,
+    openaiModel: process.env.OPENAI_MODEL ?? 'gpt-4o',
+    connectionString: process.env.CONNECTION_STRING,
+    mongodbUri: process.env.MONGODB_URI,
   },
 
   fonts: {

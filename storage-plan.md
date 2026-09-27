@@ -48,7 +48,7 @@ Add Drizzle ORM as the schema-as-code layer for all new PostgreSQL tables. This 
 
 ### Sub-Task 2 — Define PostgreSQL Schemas (Drizzle)
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Declare all four new relational tables as Drizzle schema files. These schemas are the single source of truth for the database structure and generate the SQL migrations automatically.
@@ -126,7 +126,7 @@ Declare all four new relational tables as Drizzle schema files. These schemas ar
 
 ### Sub-Task 3 — Install and Configure Mongoose for MongoDB
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Add Mongoose as the ODM for MongoDB. Define the `ChatHistory` schema with the full message subdocument structure including `archived` flags and `summary` type support. Expose a singleton Mongoose connection reused across Nuxt server requests.
@@ -173,7 +173,7 @@ Add Mongoose as the ODM for MongoDB. Define the `ChatHistory` schema with the fu
 
 ### Sub-Task 4 — Chat Context Builder Utility
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Implement a server-side utility (`lib/context.ts`) that reads a session's MongoDB chat history and returns the correctly windowed message array to pass to OpenAI. This is the core of the hybrid context strategy: full history below the token threshold, rolling window + summary above it.
@@ -218,7 +218,9 @@ Implement a server-side utility (`lib/context.ts`) that reads a session's MongoD
 
 ### Sub-Task 5 — Workspace API Routes
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
+
+> **Note:** `lib/github-token.ts` was blocked by a `.gitignore` `*token*` pattern. File created as `lib/github-resolver.ts` instead. All references use `resolveGithubAccess()` from that file.
 
 **Intent**
 Create fully functional CRUD API routes for workspaces. Include a live GitHub token resolver that first tries the stored `githubToken`, and falls back to querying the better-auth `account` table for the user's GitHub OAuth token.
@@ -250,7 +252,7 @@ Create fully functional CRUD API routes for workspaces. Include a live GitHub to
 
 ### Sub-Task 6 — Agents API Routes
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Replace the empty agent scaffolds with real database-backed routes. Implement both the global catalog (admin-managed) and the per-workspace agent management (user-managed with override fields).
@@ -279,7 +281,7 @@ Replace the empty agent scaffolds with real database-backed routes. Implement bo
 
 ### Sub-Task 7 — Chat Session and History API Routes
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Wire up the sessions scaffold and the chat route to full persistence. Every chat request creates or continues a session, persists each message to MongoDB, and updates the Postgres `chat_session` row with token totals, last-message preview, and updated timestamp. The sessions list route queries Postgres for metadata.
@@ -314,7 +316,7 @@ Wire up the sessions scaffold and the chat route to full persistence. Every chat
 
 ### Sub-Task 8 — Review API Route (GitHub Integration)
 
-**Status:** `[ ] pending`
+**Status:** `[x] done`
 
 **Intent**
 Implement the `GET /api/review` route to fetch pull-request reviews and issue comments from the connected GitHub repository using the resolved GitHub token.
@@ -339,7 +341,7 @@ Implement the `GET /api/review` route to fetch pull-request reviews and issue co
 
 ### Sub-Task 9 — Wire Up Frontend
 
-**Status:** `[ ] pending`
+**Status:** `[ ] pending — requires connection URLs from user before db:generate + db:migrate can run`
 
 **Intent**
 Update the frontend layouts and pages to consume the real API routes. The sidebar recent-sessions list should populate from the sessions API. The workspace page should show actual workspace info. Auth session data should replace hardcoded user names.
@@ -371,7 +373,7 @@ Add the following to `.env`:
 
 | Variable | Purpose |
 |---|---|
-| `AUTH_DATABASE_URL` | Already exists — PostgreSQL for better-auth + Drizzle |
+| `CONNECTION_STRING` | Base connection string (no DB name suffix). better-auth appends `defaultdb`; Drizzle appends `demidb` |
 | `MONGODB_URI` | New — MongoDB connection string for Mongoose |
 | `OPENAI_API_KEY` | Already exists |
 | `GITHUB_CLIENT_ID` | Already exists |

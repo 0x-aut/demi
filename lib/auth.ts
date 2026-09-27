@@ -5,7 +5,7 @@ import { readFileSync } from "fs";
 
 export const auth = betterAuth({
   database: new Pool({
-    connectionString: `${process.env.AUTH_DATABASE_URL}defaultdb`,
+    connectionString: `${process.env.CONNECTION_STRING}defaultdb`,
     ssl: { rejectUnauthorized: false },
   }),
 
@@ -20,6 +20,7 @@ export const auth = betterAuth({
       mapProfileToUser: (profile) => ({
         email: profile.email ?? `${profile.id}@github.placeholder.invalid`,
       }),
+      disableSignUp: false,
     },
     // google: {
     //   clientId: process.env.GOOGLE_CLIENT_ID as string,

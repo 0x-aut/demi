@@ -7,19 +7,29 @@
     "dev": "nuxt dev",
     "generate": "nuxt generate",
     "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "postinstall": "nuxt prepare",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:push:direct": "node scripts/push-schema.mjs",
+    "db:studio": "drizzle-kit studio"
   },
   "dependencies": {
     "@comark/vue": "^0.7.0",
+    "@ibm-cloud/watsonx-ai": "^1.7.16",
     "@lisse/vue": "^0.7.2",
     "@lucide/vue": "^1.48.0",
     "@nuxt/fonts": "0.14.0",
     "@nuxt/image": "2.1.0",
+    "@octokit/rest": "^22.0.1",
     "@tailwindcss/vite": "^4.3.3",
     "better-auth": "^1.7.6",
     "better-sqlite3": "^13.0.3",
     "cac": "6.7.14",
+    "dotenv": "^18.0.4",
+    "drizzle-orm": "^0.45.3",
     "eslint": "^10.11.0",
+    "mongoose": "^9.10.2",
     "nuxt": "^4.5.2",
     "openai": "^7.23.0",
     "pg": "^8.23.0",
@@ -29,6 +39,8 @@
     "vue-router": "^5.3.1"
   },
   "devDependencies": {
-    "@types/pg": "^8.23.1"
+    "@types/mongoose": "^5.11.97",
+    "@types/pg": "^8.23.1",
+    "drizzle-kit": "^0.31.11"
   }
 }
