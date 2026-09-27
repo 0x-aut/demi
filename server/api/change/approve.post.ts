@@ -142,6 +142,20 @@ Rules:
     });
   }
 
+  const proposedPaths = new Set(proposal.files.map((file) => file.path));
+  const invalidChange = generated.changes.find((change) =>
+    !proposedPaths.has(change.path) ||
+    !["create", "modify", "delete"].includes(change.action) ||
+    (change.action !== "delete" && typeof change.content !== "string")
+  );
+
+  if (invalidChange || generated.changes.length !== proposedPaths.size) {
+    throw createError({
+      statusCode: 502,
+      message: "Demi generated changes that do not match the approved proposal.",
+    });
+  }
+
   await octokit.git.createRef({
     owner,
     repo,
