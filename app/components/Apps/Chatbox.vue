@@ -10,12 +10,13 @@ const props = defineProps<{
 }>()
 
 const route = useRoute()
+const workspaceId = computed(() => String(props.workspaceId ?? route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
 
 // selectedModel is lifted here so we can pass it to sendMessage
 const selectedModel = ref("gpt-4o")
 
 const { messages, isLoading, requestError, hasMessages, loadSession, sendMessage, abort } = useChat({
-  workspaceId:      props.workspaceId ?? "default",
+  workspaceId:      workspaceId.value,
   workspaceAgentId: props.workspaceAgentId,
 })
 
@@ -61,7 +62,7 @@ function handleKeyDown(e: KeyboardEvent) {
 const proposalStates = ref<Record<number, { state: 'loading' | 'success'; pullRequest?: { number: number; url: string; title: string } }>>({})
 
 async function approveProposal(proposal: ChangeProposal, messageId: number) {
-  if (!props.workspaceId || proposalStates.value[messageId]?.state === 'loading') return
+  if (!workspaceId.value || proposalStates.value[messageId]?.state === 'loading') return
 
   proposalStates.value[messageId] = { state: 'loading' }
 
@@ -69,7 +70,7 @@ async function approveProposal(proposal: ChangeProposal, messageId: number) {
     const result = await $fetch("/api/change/approve", {
       method: "POST",
       body: {
-        workspaceId: props.workspaceId,
+        workspaceId: workspaceId.value,
         proposal,
       },
     })
