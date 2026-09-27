@@ -175,7 +175,7 @@ export function useChat(opts: UseChatOptions) {
       const data = await $fetch<{
         session: { model: string }
         messages: Array<{ role: "user" | "assistant"; content: string }>
-      }>(`/api/sessions/${id}`)
+      }>(`/api/sessions/${id}`, { query: { workspaceId: opts.workspaceId } })
 
       sessionId.value = id
       messages.value = data.messages.map((message, index) => ({
