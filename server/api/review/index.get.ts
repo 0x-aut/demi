@@ -1,85 +1,39 @@
 import { auth } from "@@/lib/auth";
-import { useDb } from "@@/db/index";
-import { workspace } from "@@/db/schema/index";
-import { eq, and } from "drizzle-orm";
-import { resolveGithubAccess } from "@@/lib/github-resolver";
+import { resolveWorkspaceRepo } from "@@/server/utils/workspace-repo";
 
 export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({ headers: event.headers });
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
 
-  const query = getQuery(event);
-  const workspaceId = query.workspaceId as string;
-
+  const workspaceId = String(getQuery(event).workspaceId ?? "");
   if (!workspaceId) throw createError({ statusCode: 400, message: "workspaceId is required" });
 
-  const db = useDb();
-  const [ws] = await db
-    .select({ repoName: workspace.repoName, repoUrl: workspace.repoUrl })
-    .from(workspace)
-    .where(and(eq(workspace.id, workspaceId), eq(workspace.userId, session.user.id)));
+  const { owner, repo, octokit } = await resolveWorkspaceRepo(session.user.id, workspaceId);
 
-  if (!ws) throw createError({ statusCode: 404, message: "Workspace not found" });
+  const { data } = await octokit.pulls.list({
+    owner,
+    repo,
+    state: "all",
+    sort: "updated",
+    direction: "desc",
+    per_page: 30,
+  });
 
-  const ghToken = await resolveGithubAccess(session.user.id, workspaceId);
-  if (!ghToken) throw createError({ statusCode: 422, message: "No GitHub token available for this workspace" });
-
-  // Parse owner/repo from repoUrl or repoName (format: "owner/repo")
-  const [owner, repo] = ws.repoName.includes("/")
-    ? ws.repoName.split("/")
-    : ws.repoUrl.replace("https://github.com/", "").split("/");
-
-  const headers: HeadersInit = {
-    Authorization: `Bearer ${ghToken}`,
-    Accept:        "application/vnd.github+json",
-    "X-GitHub-API-Version": "2022-11-28",
+  return {
+    pullRequests: data.map((pr) => ({
+      id: String(pr.id),
+      number: pr.number,
+      title: pr.title,
+      author: pr.user?.login ?? "unknown",
+      branch: pr.head.ref,
+      targetBranch: pr.base.ref,
+      status: pr.merged_at ? "merged" : pr.draft ? "draft" : pr.state,
+      reviewRequested: (pr.requested_reviewers?.length ?? 0) > 0,
+      createdAt: pr.created_at,
+      updatedAt: pr.updated_at,
+      commentsCount: pr.comments ?? 0,
+      filesChanged: pr.changed_files ?? 0,
+      url: pr.html_url,
+    })),
   };
-
-  // Fetch open pull requests
-  const prsRes = await fetch(
-    `https://api.github.com/repos/${owner}/${repo}/pulls?state=open&per_page=20`,
-    { headers },
-  );
-  if (!prsRes.ok) {
-    throw createError({ statusCode: 502, message: `GitHub API error: ${prsRes.statusText}` });
-  }
-  const prs: Array<{ number: number }> = await prsRes.json();
-
-  // Fetch reviews for each PR (cap at 5 PRs to avoid rate-limit issues)
-  const reviews: Array<{
-    id: number;
-    author: string;
-    body: string;
-    state: string;
-    submittedAt: string;
-    prNumber: number;
-  }> = [];
-
-  for (const pr of prs.slice(0, 5)) {
-    const revRes = await fetch(
-      `https://api.github.com/repos/${owner}/${repo}/pulls/${pr.number}/reviews`,
-      { headers },
-    );
-    if (!revRes.ok) continue;
-    const prReviews: Array<{
-      id: number;
-      user: { login: string };
-      body: string;
-      state: string;
-      submitted_at: string;
-    }> = await revRes.json();
-
-    for (const r of prReviews) {
-      reviews.push({
-        id:          r.id,
-        author:      r.user?.login ?? "unknown",
-        body:        r.body ?? "",
-        state:       r.state,
-        submittedAt: r.submitted_at,
-        prNumber:    pr.number,
-      });
-    }
-  }
-
-  return { reviews };
 });
