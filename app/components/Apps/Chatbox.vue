@@ -58,12 +58,12 @@ function handleKeyDown(e: KeyboardEvent) {
 }
 
 
-const approvingProposal = ref<number | null>(null)
+const proposalStates = ref<Record<number, { state: 'loading' | 'success'; pullRequest?: { number: number; url: string; title: string } }>>({})
 
 async function approveProposal(proposal: ChangeProposal, messageId: number) {
-  if (!props.workspaceId || approvingProposal.value !== null) return
+  if (!props.workspaceId || proposalStates.value[messageId]?.state === 'loading') return
 
-  approvingProposal.value = messageId
+  proposalStates.value[messageId] = { state: 'loading' }
 
   try {
     const result = await $fetch("/api/change/approve", {
@@ -77,15 +77,14 @@ async function approveProposal(proposal: ChangeProposal, messageId: number) {
     const msg = messages.value.find(m => m.id === messageId)
 
     if (msg) {
-      msg.content = `${msg.content}\n\nDone — I created [PR #${result.pullRequest.number}](${result.pullRequest.url}).`
-      delete msg.proposal
+      proposalStates.value[messageId] = { state: 'success', pullRequest: result.pullRequest }
     }
   } catch (error) {
     requestError.value = error instanceof Error
       ? error.message
       : "Demi could not create the pull request."
   } finally {
-    approvingProposal.value = null
+    if (proposalStates.value[messageId]?.state === 'loading') delete proposalStates.value[messageId]
   }
 }
 
@@ -151,8 +150,9 @@ onBeforeUnmount(() => abort())
             <AppsChangeProposalCard
               v-if="msg.proposal"
               :proposal="msg.proposal"
+              :state="proposalStates[msg.id]?.state ?? 'idle'"
+              :pull-request="proposalStates[msg.id]?.pullRequest"
               @approve="approveProposal(msg.proposal, msg.id)"
-              :class="{ 'pointer-events-none opacity-60': approvingProposal === msg.id }"
             />
           </div>
         </div>
