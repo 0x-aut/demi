@@ -95,14 +95,19 @@ onBeforeUnmount(() => abort())
           </SmoothCorners>
 
           <!-- Assistant bubble — Markdown rendered, streams token-by-token -->
-          <Markdown
-            v-else
-            :key="msg.id"
-            :value="msg.content"
-            :streaming="isLoading"
-            :caret="isLoading"
-            class="max-w-[85%] font-sans text-sm text-[#1a1a1a] leading-6 prose prose-sm"
-          />
+          <div v-else class="flex max-w-[85%] flex-col">
+            <Markdown
+              :key="msg.id"
+              :value="msg.content"
+              :streaming="isLoading"
+              :caret="isLoading"
+              class="font-sans text-sm text-[#1a1a1a] leading-6 prose prose-sm"
+            />
+            <AppsChangeProposalCard
+              v-if="msg.proposal"
+              :proposal="msg.proposal"
+            />
+          </div>
         </div>
 
         <!-- Typing indicator -->

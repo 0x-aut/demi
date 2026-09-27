@@ -1,9 +1,26 @@
 import { ref, computed } from "vue"
 
+export type ChangeAction = "create" | "modify" | "delete"
+
+export interface ChangeFileEntry {
+  path: string
+  action: ChangeAction
+  explanation: string
+  symbols?: string[]
+}
+
+export interface ChangeProposal {
+  summary: string
+  reason: string
+  files: ChangeFileEntry[]
+}
+
 export interface ChatMessage {
   id: number
   role: "user" | "assistant"
   content: string
+  /** Present when the assistant produced a structured change proposal */
+  proposal?: ChangeProposal
 }
 
 export interface UseChatOptions {
@@ -33,6 +50,13 @@ export function useChat(opts: UseChatOptions) {
     }
     const msg = messages.value.find((m) => m.id === assistantId.value)
     if (msg) msg.content += delta
+  }
+
+  /** Attach a parsed proposal to the last assistant message. */
+  function attachProposal(assistantId: { value: number | null }, proposal: ChangeProposal) {
+    if (assistantId.value === null) return
+    const msg = messages.value.find((m) => m.id === assistantId.value)
+    if (msg) msg.proposal = proposal
   }
 
   // ── Public API ──────────────────────────────────────────────────────────
@@ -87,6 +111,8 @@ export function useChat(opts: UseChatOptions) {
           sessionId.value = data.sessionId
         } else if (name === "delta" && typeof data?.content === "string") {
           appendDelta(assistantId, data.content)
+        } else if (name === "proposal" && data?.proposal) {
+          attachProposal(assistantId, data.proposal as ChangeProposal)
         } else if (name === "error") {
           const msg = (typeof data?.message === "string" && data.message)
             ? data.message

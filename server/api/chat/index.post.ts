@@ -1,10 +1,12 @@
 import { auth } from "@@/lib/auth";
 import { useDb } from "@@/db/index";
-import { chatSession, type NewChatSession } from "@@/db/schema/index";
-import { eq } from "drizzle-orm";
+import { chatSession, workspace, type NewChatSession } from "@@/db/schema/index";
+import { eq, and } from "drizzle-orm";
 import { connectMongo } from "@@/db/mongo";
 import { ChatHistory } from "@@/db/models/chatHistory";
 import { useOpenAI } from "@@/lib/openai";
+import { buildSystemPrompt, extractProposal, stripProposalBlock } from "@@/lib/change-planner/planner";
+import { getOctokit } from "@@/server/utils/github";
 
 /** Write a single SSE event to the raw Node response. */
 function sseEvent(res: NodeJS.WritableStream, name: string, data: unknown) {
@@ -80,6 +82,56 @@ async function appendChatMessage(
   );
 }
 
+/**
+ * Fetch the repo file tree for the workspace and build a repo-aware system prompt.
+ * Returns null if the workspace has no repo configured or GitHub access fails.
+ */
+async function buildRepoSystemPrompt(
+  event: Parameters<typeof getOctokit>[0],
+  ws: { repoName: string; githubToken: string | null; branch: string },
+): Promise<string | null> {
+  try {
+    // repoName is stored as "owner/repo"
+    const parts = ws.repoName.split("/");
+    const owner = parts[0];
+    const repo  = parts[1];
+    if (!owner || !repo) return null;
+
+    const { octokit } = await getOctokit(event);
+
+    // Resolve SHA for the configured branch (fall back to repo default)
+    let branch = ws.branch ?? "main";
+    let sha: string;
+
+    try {
+      const { data: refData } = await octokit.git.getRef({
+        owner, repo, ref: `heads/${branch}`,
+      });
+      sha = refData.object.sha;
+    } catch {
+      const { data: repoData } = await octokit.repos.get({ owner, repo });
+      branch = repoData.default_branch;
+      const { data: refData } = await octokit.git.getRef({
+        owner, repo, ref: `heads/${branch}`,
+      });
+      sha = refData.object.sha;
+    }
+
+    const { data: treeData } = await octokit.git.getTree({
+      owner, repo, tree_sha: sha, recursive: "1",
+    });
+
+    const filePaths = treeData.tree
+      .filter((n) => n.type === "blob" && n.path)
+      .map((n) => n.path as string);
+
+    return buildSystemPrompt({ owner, repoName: repo, branch, filePaths });
+  } catch {
+    // GitHub unavailable / no token — degrade gracefully without system prompt
+    return null;
+  }
+}
+
 export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({ headers: event.headers });
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
@@ -97,7 +149,17 @@ export default defineEventHandler(async (event) => {
   const db     = useDb();
   const openai = useOpenAI();
 
-  // ── Session bookkeeping ───────────────────────────────────────────────────
+  // ── Resolve workspace + repo context ──────────────────────────────────────
+  const [ws] = await db
+    .select({
+      repoName:    workspace.repoName,
+      githubToken: workspace.githubToken,
+      branch:      workspace.branch,
+    })
+    .from(workspace)
+    .where(and(eq(workspace.id, workspaceId), eq(workspace.userId, session.user.id)));
+
+  // ── Session bookkeeping ────────────────────────────────────────────────────
   const { activeSessionId } = await handleSession({
     sessionId,
     prompt,
@@ -108,16 +170,26 @@ export default defineEventHandler(async (event) => {
     db,
   });
 
-  // ── Persist user message ──────────────────────────────────────────────────
+  // ── Persist user message ───────────────────────────────────────────────────
   await appendChatMessage(activeSessionId, "user", prompt);
 
-  // ── Build context from history ────────────────────────────────────────────
+  // ── Build context from history ─────────────────────────────────────────────
   const doc = await ChatHistory.findOne({ sessionId: activeSessionId });
   const contextMessages: ChatMessage[] = (doc?.messages ?? [])
     .filter((m) => !m.archived && (m.role === "user" || m.role === "assistant"))
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-  // ── Open SSE stream to client ─────────────────────────────────────────────
+  // ── Build repo-aware system prompt ────────────────────────────────────────
+  const systemPromptText = ws
+    ? await buildRepoSystemPrompt(event, ws)
+    : null;
+
+  const openaiMessages: Array<{ role: "system" | "user" | "assistant"; content: string }> = [
+    ...(systemPromptText ? [{ role: "system" as const, content: systemPromptText }] : []),
+    ...contextMessages,
+  ];
+
+  // ── Open SSE stream to client ──────────────────────────────────────────────
   const nodeRes = event.node.res;
   nodeRes.setHeader("Content-Type", "text/event-stream");
   nodeRes.setHeader("Cache-Control", "no-cache");
@@ -131,7 +203,7 @@ export default defineEventHandler(async (event) => {
   try {
     const stream = await openai.chat.completions.create({
       model,
-      messages: contextMessages,
+      messages: openaiMessages,
       stream: true,
     });
 
@@ -149,7 +221,15 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  // ── Persist assistant reply ───────────────────────────────────────────────
+  // ── Extract proposal (if any) and emit as dedicated SSE event ─────────────
+  const proposal = extractProposal(reply);
+  if (proposal) {
+    // Strip the raw JSON block from the persisted text — keep only the prose
+    reply = stripProposalBlock(reply);
+    sseEvent(nodeRes, "proposal", { proposal });
+  }
+
+  // ── Persist assistant reply ────────────────────────────────────────────────
   await appendChatMessage(activeSessionId, "assistant", reply);
 
   await db
