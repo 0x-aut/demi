@@ -8,7 +8,7 @@ import {
   FileCode2,
   Settings,
   MessageSquareText,
-  LogOut,
+  LogOut
 } from "@lucide/vue";
 
 const route = useRoute();
@@ -22,26 +22,26 @@ const workspaceNavigation = computed(() => [
     name: "Home",
     to: `/${username.value}/${workspace.value}/home`,
     icon: House,
-    tooltip: "Workspace home",
+    tooltip: "Workspace home"
   },
   {
     name: "Sessions",
     to: `/${username.value}/${workspace.value}/sessions`,
     icon: MessagesSquare,
-    tooltip: "Browse past sessions",
+    tooltip: "Browse past sessions"
   },
   {
     name: "Review",
     to: `/${username.value}/${workspace.value}/review`,
     icon: GitPullRequestArrow,
-    tooltip: "Review agent activity",
+    tooltip: "Review agent activity"
   },
   {
     name: "Code",
     to: `/${username.value}/${workspace.value}/code`,
     icon: FileCode2,
-    tooltip: "Browse repository code",
-  },
+    tooltip: "Browse repository code"
+  }
 ]);
 
 const settingsNavigation = computed(() => [
@@ -49,8 +49,8 @@ const settingsNavigation = computed(() => [
     name: "Settings",
     to: `/${username.value}/${workspace.value}/settings`,
     icon: Settings,
-    tooltip: "Workspace settings",
-  },
+    tooltip: "Workspace settings"
+  }
 ]);
 
 const recentOpen = ref(true);
@@ -71,17 +71,11 @@ const recentSessions = ref<RecentSession[]>([]);
 </script>
 
 <template>
-  <main
-    class="unmodified-font-sans flex h-screen w-full justify-start bg-[#F4F4F4] p-2.5"
-  >
+  <main class="unmodified-font-sans flex h-screen w-full justify-start bg-[#F4F4F4] p-2.5">
     <aside class="flex w-55 shrink-0 flex-col py-2.5 pr-2.5 max-md:hidden">
       <div class="relative mb-5 flex items-center justify-between">
         <SmoothCorners as-child :corners="{ radius: 999 }">
-          <button
-            type="button"
-            class="flex group items-center gap-x-1.5 px-1 py-0.75 transition-colors duration-100 hover:bg-[#EBEBEB]"
-            @click="accountOpen = !accountOpen"
-          >
+          <button type="button" class="flex group items-center gap-x-1.5 px-1 py-0.75 transition-colors duration-100 hover:bg-[#EBEBEB]" @click="accountOpen = !accountOpen">
             <SmoothCorners as-child :corners="{ radius: 7, smoothing: 1 }">
               <div class="flex h-6 w-6 shrink-0 items-center justify-center bg-[#4169E1]">
                 <span class="font-sans text-xs font-semibold leading-none text-white">
@@ -96,25 +90,10 @@ const recentSessions = ref<RecentSession[]>([]);
           </button>
         </SmoothCorners>
 
-        <Transition
-          enter-active-class="transition-all duration-150 ease-out"
-          enter-from-class="opacity-0 -translate-y-1 scale-95"
-          enter-to-class="opacity-100 translate-y-0 scale-100"
-          leave-active-class="transition-all duration-100 ease-in"
-          leave-from-class="opacity-100 translate-y-0 scale-100"
-          leave-to-class="opacity-0 -translate-y-1 scale-95"
-        >
-          <SmoothCorners
-            v-if="accountOpen"
-            as-child
-            :corners="{ radius: 10, smoothing: 0.6 }"
-          >
+        <Transition enter-active-class="transition-all duration-150 ease-out" enter-from-class="opacity-0 -translate-y-1 scale-95" enter-to-class="opacity-100 translate-y-0 scale-100" leave-active-class="transition-all duration-100 ease-in" leave-from-class="opacity-100 translate-y-0 scale-100" leave-to-class="opacity-0 -translate-y-1 scale-95">
+          <SmoothCorners v-if="accountOpen" as-child :corners="{ radius: 10, smoothing: 0.6 }">
             <div class="absolute left-0 top-9 z-50 w-52 border border-[#E3E3E3] bg-white p-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
-              <button
-                type="button"
-                class="group flex w-full items-center gap-x-2 px-2.5 py-2 text-left transition-colors duration-100 hover:bg-[#F2F2F2]"
-                @click="handleSignOut"
-              >
+              <button type="button" class="group flex w-full items-center gap-x-2 px-2.5 py-2 text-left transition-colors duration-100 hover:bg-[#F2F2F2]" @click="handleSignOut">
                 <LogOut :size="14" :stroke-width="1.8" class="text-[#6B6B6B] group-hover:text-[#121212]" />
                 <span class="unmodified-font-sans text-sm text-[#6B6B6B] group-hover:text-[#121212]">Sign out</span>
               </button>
@@ -126,21 +105,9 @@ const recentSessions = ref<RecentSession[]>([]);
       <nav class="flex flex-col gap-y-0.5">
         <div v-for="item in workspaceNavigation" :key="item.to" class="relative group">
           <SmoothCorners as-child :corners="{ radius: 10, smoothing: 0.6 }">
-            <NuxtLink
-              :to="item.to"
-              :class="[
-                'flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]'
-              ]"
-            >
-              <component :is="item.icon" :size="14" :stroke-width="1.8" :class="[
-                'transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-              ]" />
-              <span :class="[
-                'unmodified-font-sans text-sm font-normal transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-              ]">{{ item.name }}</span>
+            <NuxtLink :to="item.to" :class="['flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]']">
+              <component :is="item.icon" :size="14" :stroke-width="1.8" :class="['transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']" />
+              <span :class="['unmodified-font-sans text-sm font-normal transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']">{{ item.name }}</span>
             </NuxtLink>
           </SmoothCorners>
           <ElementsNavTooltip :text="item.tooltip" />
@@ -148,44 +115,18 @@ const recentSessions = ref<RecentSession[]>([]);
       </nav>
 
       <div class="mt-6 flex flex-col gap-y-1">
-        <button
-          type="button"
-          class="group flex items-center justify-between px-2.5 py-0.5 transition-colors duration-100"
-          @click="recentOpen = !recentOpen"
-        >
+        <button type="button" class="group flex items-center justify-between px-2.5 py-0.5 transition-colors duration-100" @click="recentOpen = !recentOpen">
           <span class="unmodified-font-sans text-xs font-medium text-[#9A9A9A] transition-colors duration-100 group-hover:text-[#6B6B6B]">Recent</span>
-          <ChevronDown :size="12" :stroke-width="2" :class="[
-            'text-[#9A9A9A] transition-all duration-150 group-hover:text-[#6B6B6B]',
-            recentOpen ? 'rotate-0' : '-rotate-90'
-          ]" />
+          <ChevronDown :size="12" :stroke-width="2" :class="['text-[#9A9A9A] transition-all duration-150 group-hover:text-[#6B6B6B]', recentOpen ? 'rotate-0' : '-rotate-90']" />
         </button>
 
-        <Transition
-          enter-active-class="transition-all duration-150 ease-out overflow-hidden"
-          enter-from-class="opacity-0 max-h-0"
-          enter-to-class="opacity-100 max-h-96"
-          leave-active-class="transition-all duration-100 ease-in overflow-hidden"
-          leave-from-class="opacity-100 max-h-96"
-          leave-to-class="opacity-0 max-h-0"
-        >
+        <Transition enter-active-class="transition-all duration-150 ease-out overflow-hidden" enter-from-class="opacity-0 max-h-0" enter-to-class="opacity-100 max-h-96" leave-active-class="transition-all duration-100 ease-in overflow-hidden" leave-from-class="opacity-100 max-h-96" leave-to-class="opacity-0 max-h-0">
           <div v-if="recentOpen" class="flex flex-col gap-y-0.5">
             <template v-if="recentSessions.length > 0">
               <SmoothCorners v-for="session in recentSessions" :key="session.id" as-child :corners="{ radius: 10, smoothing: 0.6 }">
-                <NuxtLink
-                  :to="session.to"
-                  :class="[
-                    'group flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
-                    route.path === session.to ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]'
-                  ]"
-                >
-                  <MessageSquareText :size="14" :stroke-width="1.8" :class="[
-                    'shrink-0 transition-colors duration-100',
-                    route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-                  ]" />
-                  <span :class="[
-                    'unmodified-font-sans truncate text-sm font-normal transition-colors duration-100',
-                    route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-                  ]">{{ session.title }}</span>
+                <NuxtLink :to="session.to" :class="['group flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100', route.path === session.to ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]']">
+                  <MessageSquareText :size="14" :stroke-width="1.8" :class="['shrink-0 transition-colors duration-100', route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']" />
+                  <span :class="['unmodified-font-sans truncate text-sm font-normal transition-colors duration-100', route.path === session.to ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']">{{ session.title }}</span>
                 </NuxtLink>
               </SmoothCorners>
             </template>
@@ -197,21 +138,9 @@ const recentSessions = ref<RecentSession[]>([]);
       <nav class="flex flex-col gap-y-0.5 mt-auto">
         <div v-for="item in settingsNavigation" :key="item.to" class="relative group">
           <SmoothCorners as-child :corners="{ radius: 10, smoothing: 0.6 }">
-            <NuxtLink
-              :to="item.to"
-              :class="[
-                'flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]'
-              ]"
-            >
-              <component :is="item.icon" :size="14" :stroke-width="1.8" :class="[
-                'transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-              ]" />
-              <span :class="[
-                'unmodified-font-sans text-sm font-normal transition-colors duration-100',
-                route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]'
-              ]">{{ item.name }}</span>
+            <NuxtLink :to="item.to" :class="['flex items-center gap-x-1.5 px-2.5 py-1 transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'bg-[#E3E3E3]' : 'hover:bg-[#EBEBEB]']">
+              <component :is="item.icon" :size="14" :stroke-width="1.8" :class="['transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']" />
+              <span :class="['unmodified-font-sans text-sm font-normal transition-colors duration-100', route.path === item.to || route.path.startsWith(item.to) ? 'text-[#121212]' : 'text-[#6B6B6B] group-hover:text-[#121212]']">{{ item.name }}</span>
             </NuxtLink>
           </SmoothCorners>
           <ElementsNavTooltip :text="item.tooltip" />
