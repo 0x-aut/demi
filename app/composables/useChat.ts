@@ -163,6 +163,31 @@ export function useChat(opts: UseChatOptions) {
     }
   }
 
+  async function loadSession(id: string): Promise<{ model: string } | null> {
+    if (!id || isLoading.value) return null
+
+    requestError.value = ""
+
+    try {
+      const data = await $fetch<{
+        session: { model: string }
+        messages: Array<{ role: "user" | "assistant"; content: string }>
+      }>(`/api/sessions/${id}`)
+
+      sessionId.value = id
+      messages.value = data.messages.map((message, index) => ({
+        id: index + 1,
+        role: message.role,
+        content: message.content,
+      }))
+
+      return data.session
+    } catch (err) {
+      requestError.value = err instanceof Error ? err.message : "Could not load this session."
+      return null
+    }
+  }
+
   function abort() {
     abortController?.abort()
     isLoading.value = false
@@ -174,6 +199,7 @@ export function useChat(opts: UseChatOptions) {
     requestError,
     hasMessages,
     sessionId,
+    loadSession,
     sendMessage,
     abort,
   }
