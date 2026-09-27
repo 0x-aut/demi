@@ -110,7 +110,7 @@ function modelLabel(id: string): string {
           as-child
           :corners="{ radius: 12, smoothing: 0.6 }"
         >
-          <div class="group border border-[#E3E3E3] bg-white px-5 py-4 transition-colors duration-100 hover:bg-[#FAFAFA] cursor-pointer">
+          <NuxtLink :to="`/${route.params.username}/${route.params.workspace}/home?session=${session.id}`" class="block group border border-[#E3E3E3] bg-white px-5 py-4 transition-colors duration-100 hover:bg-[#FAFAFA] cursor-pointer">
             <div class="flex items-start justify-between gap-x-4">
               <!-- Title + preview -->
               <div class="min-w-0 flex-1">
@@ -142,7 +142,7 @@ function modelLabel(id: string): string {
                 </span>
               </SmoothCorners>
             </div>
-          </div>
+          </NuxtLink>
         </SmoothCorners>
       </div>
 
