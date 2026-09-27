@@ -29,6 +29,50 @@ Demi is an AI-powered developer workspace that helps `U` understand an unfamilia
 
 Context: built for **IBM Bob 2.0 Hackathon** (Sep 25–27, 2026), solo dev, Nuxt. Bob IDE is being used to *accelerate building Demi itself* — it is a dev-time tool here, not a required runtime dependency of the product.
 
+## Bob 2.0 Build Sessions
+
+Screenshots from the Bob 2.0 development sessions used to build Demi.
+
+### Authentication & GitHub
+
+![Demi authentication flow](./bob_sessions/team_demi_auth_flow.png)
+
+![Demi GitHub connection](./bob_sessions/team_demi_github_connection.png)
+
+### Core Chat
+
+![Demi chat UI](./bob_sessions/team_demi_chat_ui.png)
+
+![Demi chat core](./bob_sessions/team_demi_chat_core.png)
+
+![Demi chat middleware](./bob_sessions/team_demi_chat_middleware.png)
+
+![Demi repo-aware chat](./bob_sessions/team_demi_repo_aware.png)
+
+### Workspace & Product UI
+
+![Demi homepage task](./bob_sessions/team_demi_homepage_task.png)
+
+![Demi layouts](./bob_sessions/team_demi_layouts.png)
+
+![Demi inline anonymous changes](./bob_sessions/team_demi_inline_anonymous_changes.png)
+
+![Demi UI changes](./bob_sessions/team_demi_ui_changes.png)
+
+### Sessions & Review
+
+![Demi sessions page](./bob_sessions/team_demi_sessions_page.png)
+
+![Demi review page](./bob_sessions/team_demi_review_page.png)
+
+### Storage
+
+![Demi storage core](./bob_sessions/team_demi_storage_core.png)
+
+### Structure
+
+![Demi structure change](./bob_sessions/team_demi_structure_change.png)
+
 ## §2 Core flow
 
 ```
