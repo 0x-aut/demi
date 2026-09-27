@@ -153,9 +153,9 @@ onBeforeUnmount(() => abort())
 
         <!-- Typing indicator -->
         <div v-if="isLoading" class="flex justify-start">
-          <div class="rounded-2xl rounded-bl-md border border-[#E5E5E5] bg-white px-4 py-2.5 text-sm font-sans text-[#696969]">
+          <span class="text-sm font-sans text-[#696969]">
             {{ displayName ?? 'Demi' }} is thinking<span class="animate-pulse">…</span>
-          </div>
+          </span>
         </div>
 
         <!-- Error -->
