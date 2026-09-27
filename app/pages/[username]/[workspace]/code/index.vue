@@ -4,12 +4,12 @@ import { SmoothCorners } from "@lisse/vue";
 definePageMeta({ layout: "use" });
 useSeoMeta({ title: "Code" });
 type Node={path:string;type:string;size:number|null;sha:string|null};
-const route=useRoute(); const workspaceId=route.params.workspace as string;
+const route=useRoute(); const workspaceId=computed(()=>String(route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""));
 const tree=ref<Node[]>([]); const selected=ref(""); const content=ref(""); const branch=ref(""); const loading=ref(true); const fileLoading=ref(false); const error=ref(""); const fileError=ref(""); const search=ref("");
 const files=computed(()=>tree.value.filter(n=>n.type==="blob" && (!search.value || n.path.toLowerCase().includes(search.value.toLowerCase()))));
 const folders=computed(()=>{ const s=new Set<string>(); tree.value.filter(n=>n.type==="blob").forEach(n=>{const parts=n.path.split("/"); if(parts.length>1) s.add(parts[0]);}); return [...s]; });
-async function loadTree(){ loading.value=true; error.value=""; try{const r=await $fetch<{tree:Node[];branch:string}>("/api/code/tree",{query:{workspaceId}}); tree.value=r.tree; branch.value=r.branch; if(selected.value && !r.tree.some(n=>n.path===selected.value)){selected.value=""; content.value="";}}catch(e){error.value=e instanceof Error?e.message:"Failed to load repository";}finally{loading.value=false;} }
-async function openFile(path:string){selected.value=path; fileLoading.value=true; fileError.value=""; content.value=""; try{const r=await $fetch<{content:string}>("/api/code/content",{query:{workspaceId,path,branch:branch.value}}); content.value=r.content;}catch(e){fileError.value=e instanceof Error?e.message:"Failed to load file";}finally{fileLoading.value=false;} }
+async function loadTree(){ loading.value=true; error.value=""; try{const r=await $fetch<{tree:Node[];branch:string}>("/api/code/tree",{query:{workspaceId:workspaceId.value}}); tree.value=r.tree; branch.value=r.branch; if(selected.value && !r.tree.some(n=>n.path===selected.value)){selected.value=""; content.value="";}}catch(e){error.value=e instanceof Error?e.message:"Failed to load repository";}finally{loading.value=false;} }
+async function openFile(path:string){selected.value=path; fileLoading.value=true; fileError.value=""; content.value=""; try{const r=await $fetch<{content:string}>("/api/code/content",{query:{workspaceId:workspaceId.value,path,branch:branch.value}}); content.value=r.content;}catch(e){fileError.value=e instanceof Error?e.message:"Failed to load file";}finally{fileLoading.value=false;} }
 function lineCount(value:string){return value ? value.split("\n").length : 0}
 await loadTree();
 </script>
