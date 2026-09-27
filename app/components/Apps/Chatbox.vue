@@ -9,10 +9,12 @@ const props = defineProps<{
   workspaceAgentId?: string
 }>()
 
+const route = useRoute()
+
 // selectedModel is lifted here so we can pass it to sendMessage
 const selectedModel = ref("gpt-4o")
 
-const { messages, isLoading, requestError, hasMessages, sendMessage, abort } = useChat({
+const { messages, isLoading, requestError, hasMessages, loadSession, sendMessage, abort } = useChat({
   workspaceId:      props.workspaceId ?? "default",
   workspaceAgentId: props.workspaceAgentId,
 })
@@ -90,7 +92,17 @@ async function approveProposal(proposal: ChangeProposal, messageId: number) {
 
 watch(messages, scrollToBottom, { deep: true })
 
-onMounted(() => textareaRef.value?.focus())
+onMounted(async () => {
+  const requestedSession = typeof route.query.session === "string" ? route.query.session : null
+
+  if (requestedSession) {
+    const session = await loadSession(requestedSession)
+    if (session?.model) selectedModel.value = session.model
+  }
+
+  await nextTick()
+  textareaRef.value?.focus()
+})
 onBeforeUnmount(() => abort())
 </script>
 
