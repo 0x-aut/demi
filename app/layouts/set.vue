@@ -133,7 +133,7 @@ const featureNavigation = [
               </span>
             </NuxtLink>
           </SmoothCorners>
-          <UIElementsNavTooltip :text="item.tooltip" />
+          <ElementsNavTooltip :text="item.tooltip" />
         </div>
       </nav>
 
@@ -180,7 +180,7 @@ const featureNavigation = [
               </span>
             </NuxtLink>
           </SmoothCorners>
-          <UIElementsNavTooltip :text="item.tooltip" />
+          <ElementsNavTooltip :text="item.tooltip" />
         </div>
       </nav>
     </aside>

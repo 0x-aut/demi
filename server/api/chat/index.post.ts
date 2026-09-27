@@ -12,6 +12,74 @@ function sseEvent(res: NodeJS.WritableStream, name: string, data: unknown) {
   res.write(`event: ${name}\ndata: ${payload}\n\n`);
 }
 
+type ChatMessage = { role: "user" | "assistant"; content: string };
+
+/** Create a new session (+ its Mongo history doc) or resolve an existing one. */
+async function handleSession(opts: {
+  sessionId: string | undefined;
+  prompt: string;
+  userId: string;
+  workspaceId: string;
+  workspaceAgentId: string | null;
+  model: string;
+  db: ReturnType<typeof useDb>;
+}): Promise<{ activeSessionId: string; mongoHistoryId: string }> {
+  const { sessionId, prompt, userId, workspaceId, workspaceAgentId, model, db } = opts;
+
+  if (!sessionId) {
+    const historyDoc = await ChatHistory.create({
+      sessionId: "pending",
+      messages: [],
+      totalTokens: 0,
+    });
+
+    const title = prompt.slice(0, 60);
+    const newSession: NewChatSession = {
+      userId,
+      workspaceId,
+      workspaceAgentId: workspaceAgentId ?? null,
+      mongoHistoryId: historyDoc._id.toString(),
+      title,
+      model,
+      totalTokens: 0,
+      status: "active",
+    };
+
+    const [created] = await db.insert(chatSession).values(newSession).returning();
+    const activeSessionId = created.id;
+    const mongoHistoryId = historyDoc._id.toString();
+
+    await ChatHistory.updateOne({ _id: historyDoc._id }, { $set: { sessionId: activeSessionId } });
+    return { activeSessionId, mongoHistoryId };
+  }
+
+  const [existing] = await db
+    .select({ mongoHistoryId: chatSession.mongoHistoryId })
+    .from(chatSession)
+    .where(eq(chatSession.id, sessionId));
+
+  if (!existing) throw createError({ statusCode: 404, message: "Session not found" });
+  return { activeSessionId: sessionId, mongoHistoryId: existing.mongoHistoryId };
+}
+
+/** Append a message to the chat history and increment the token counter. */
+async function appendChatMessage(
+  sessionId: string,
+  role: "user" | "assistant",
+  content: string,
+): Promise<void> {
+  const tokens = Math.ceil(content.length / 4);
+  await ChatHistory.updateOne(
+    { sessionId },
+    {
+      $push: {
+        messages: { role, content, tokens, timestamp: new Date(), archived: false },
+      },
+      $inc: { totalTokens: tokens },
+    },
+  );
+}
+
 export default defineEventHandler(async (event) => {
   const session = await auth.api.getSession({ headers: event.headers });
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
@@ -30,64 +98,22 @@ export default defineEventHandler(async (event) => {
   const openai = useOpenAI();
 
   // ── Session bookkeeping ───────────────────────────────────────────────────
-  let activeSessionId: string = sessionId;
-  let mongoHistoryId: string;
-
-  if (!activeSessionId) {
-    const historyDoc = await ChatHistory.create({
-      sessionId: "pending",
-      messages:  [],
-      totalTokens: 0,
-    });
-
-    const title = (prompt as string).slice(0, 60);
-    const newSession: NewChatSession = {
-      userId:           session.user.id,
-      workspaceId,
-      workspaceAgentId: workspaceAgentId ?? null,
-      mongoHistoryId:   historyDoc._id.toString(),
-      title,
-      model,
-      totalTokens:      0,
-      status:           "active",
-    };
-
-    const [created] = await db.insert(chatSession).values(newSession).returning();
-    activeSessionId = created.id;
-    mongoHistoryId  = historyDoc._id.toString();
-
-    await ChatHistory.updateOne({ _id: historyDoc._id }, { $set: { sessionId: activeSessionId } });
-  } else {
-    const [existing] = await db
-      .select({ mongoHistoryId: chatSession.mongoHistoryId })
-      .from(chatSession)
-      .where(eq(chatSession.id, activeSessionId));
-
-    if (!existing) throw createError({ statusCode: 404, message: "Session not found" });
-    mongoHistoryId = existing.mongoHistoryId;
-  }
+  const { activeSessionId } = await handleSession({
+    sessionId,
+    prompt,
+    userId: session.user.id,
+    workspaceId,
+    workspaceAgentId: workspaceAgentId ?? null,
+    model,
+    db,
+  });
 
   // ── Persist user message ──────────────────────────────────────────────────
-  const userTokenEstimate = Math.ceil((prompt as string).length / 4);
-  await ChatHistory.updateOne(
-    { sessionId: activeSessionId },
-    {
-      $push: {
-        messages: {
-          role:      "user",
-          content:   prompt,
-          tokens:    userTokenEstimate,
-          timestamp: new Date(),
-          archived:  false,
-        },
-      },
-      $inc: { totalTokens: userTokenEstimate },
-    },
-  );
+  await appendChatMessage(activeSessionId, "user", prompt);
 
   // ── Build context from history ────────────────────────────────────────────
   const doc = await ChatHistory.findOne({ sessionId: activeSessionId });
-  const contextMessages = (doc?.messages ?? [])
+  const contextMessages: ChatMessage[] = (doc?.messages ?? [])
     .filter((m) => !m.archived && (m.role === "user" || m.role === "assistant"))
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
@@ -124,22 +150,7 @@ export default defineEventHandler(async (event) => {
   }
 
   // ── Persist assistant reply ───────────────────────────────────────────────
-  const replyTokens = Math.ceil(reply.length / 4);
-  await ChatHistory.updateOne(
-    { sessionId: activeSessionId },
-    {
-      $push: {
-        messages: {
-          role:      "assistant",
-          content:   reply,
-          tokens:    replyTokens,
-          timestamp: new Date(),
-          archived:  false,
-        },
-      },
-      $inc: { totalTokens: replyTokens },
-    },
-  );
+  await appendChatMessage(activeSessionId, "assistant", reply);
 
   await db
     .update(chatSession)

@@ -6,9 +6,9 @@ const emit = defineEmits<{ select: [model: string] }>()
 
 // Maps display labels → actual OpenAI model IDs
 const MODELS: { label: string; id: string }[] = [
-  { label: "GPT-4o",       id: "gpt-4o" },
-  { label: "GPT-4o mini",  id: "gpt-4o-mini" },
-  { label: "GPT-4 Turbo",  id: "gpt-4-turbo" },
+  { label: "GPT-6 Luna", id: "gpt-6-luna" },
+  { label: "GPT-6 Sol", id: "gpt-6-sol" },
+  // { label: "GPT-6 Astra",  id: "gpt-6-astra" }, Not enough credits to test this
 ]
 
 const selected  = ref(MODELS[0]!)

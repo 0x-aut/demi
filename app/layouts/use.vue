@@ -3,7 +3,6 @@ import { SmoothCorners } from "@lisse/vue";
 import {
   ChevronDown,
   House,
-  LassoSelect,
   MessagesSquare,
   GitPullRequestArrow,
   Settings,
@@ -21,12 +20,6 @@ const workspaceNavigation = computed(() => [
     to: `/${username}/${workspace}/home`,
     icon: House,
     tooltip: "Workspace home",
-  },
-  {
-    name: "Agents",
-    to: `/${username}/${workspace}/agents`,
-    icon: LassoSelect,
-    tooltip: "View and manage agents",
   },
   {
     name: "Sessions",
@@ -151,7 +144,7 @@ const recentSessions = ref<RecentSession[]>([]);
               </span>
             </NuxtLink>
           </SmoothCorners>
-          <UIElementsNavTooltip :text="item.tooltip" />
+          <ElementsNavTooltip :text="item.tooltip" />
         </div>
       </nav>
 
@@ -273,7 +266,7 @@ const recentSessions = ref<RecentSession[]>([]);
               </span>
             </NuxtLink>
           </SmoothCorners>
-          <UIElementsNavTooltip :text="item.tooltip" />
+          <ElementsNavTooltip :text="item.tooltip" />
         </div>
       </nav>
     </aside>
