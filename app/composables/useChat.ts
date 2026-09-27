@@ -72,7 +72,8 @@ export function useChat(opts: UseChatOptions) {
     // Push user bubble immediately
     messages.value.push({ id: Date.now(), role: "user", content: clean })
 
-    abortController = new AbortController()
+    const controller = new AbortController()
+    abortController = controller
 
     const assistantId: { value: number | null } = { value: null }
     let reader: ReadableStreamDefaultReader<Uint8Array> | null = null
@@ -88,7 +89,7 @@ export function useChat(opts: UseChatOptions) {
           workspaceAgentId: opts.workspaceAgentId,
           ...(model ? { model } : {}),
         }),
-        signal: abortController.signal,
+        signal: controller.signal,
       })
 
       if (!response.ok || !response.body) {
@@ -158,8 +159,10 @@ export function useChat(opts: UseChatOptions) {
         err instanceof Error ? err.message : "Demi could not respond right now. Please try again."
     } finally {
       try { await reader?.cancel() } catch { /* already closed */ }
-      abortController = null
-      isLoading.value = false
+      if (abortController === controller) {
+        abortController = null
+        isLoading.value = false
+      }
     }
   }
 
@@ -190,7 +193,6 @@ export function useChat(opts: UseChatOptions) {
 
   function abort() {
     abortController?.abort()
-    isLoading.value = false
   }
 
   return {
