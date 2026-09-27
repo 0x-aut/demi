@@ -12,31 +12,32 @@ import {
 
 const route = useRoute();
 
-const username = route.params.username as string;
-const workspace = route.params.workspace as string;
+const routeParts = computed(() => route.path.split("/").filter(Boolean))
+const username = computed(() => String(route.params.username ?? routeParts.value[0] ?? ""))
+const workspace = computed(() => String(route.params.workspace ?? route.params.workspaceId ?? routeParts.value[1] ?? ""))
 
 const workspaceNavigation = computed(() => [
   {
     name: "Home",
-    to: `/${username}/${workspace}/home`,
+    to: `/${username.value}/${workspace.value}/home`,
     icon: House,
     tooltip: "Workspace home",
   },
   {
     name: "Sessions",
-    to: `/${username}/${workspace}/sessions`,
+    to: `/${username.value}/${workspace.value}/sessions`,
     icon: MessagesSquare,
     tooltip: "Browse past sessions",
   },
   {
     name: "Review",
-    to: `/${username}/${workspace}/review`,
+    to: `/${username.value}/${workspace.value}/review`,
     icon: GitPullRequestArrow,
     tooltip: "Review agent activity",
   },
   {
     name: "Code",
-    to: `/${username}/${workspace}/code`,
+    to: `/${username.value}/${workspace.value}/code`,
     icon: FileCode2,
     tooltip: "Browse repository code",
   },
@@ -45,7 +46,7 @@ const workspaceNavigation = computed(() => [
 const settingsNavigation = computed(() => [
   {
     name: "Settings",
-    to: `/${username}/${workspace}/settings`,
+    to: `/${username.value}/${workspace.value}/settings`,
     icon: Settings,
     tooltip: "Workspace settings",
   },
