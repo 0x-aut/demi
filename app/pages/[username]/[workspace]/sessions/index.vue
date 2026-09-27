@@ -10,7 +10,7 @@ useSeoMeta({
 })
 
 const route = useRoute()
-const workspaceId = route.params.workspace as string
+const workspaceId = computed(() => String(route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
 
 type Session = {
   id: string
@@ -22,7 +22,7 @@ type Session = {
 }
 
 const { data, pending, error } = await useFetch<{ sessions: Session[] }>("/api/sessions", {
-  query: { workspaceId },
+  query: { workspaceId: workspaceId.value },
 })
 
 const sessions = computed(() => data.value?.sessions ?? [])
