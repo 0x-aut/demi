@@ -10,12 +10,14 @@ export default defineEventHandler(async (event) => {
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
 
   const id = getRouterParam(event, "id");
+  const workspaceId = String(getQuery(event).workspaceId ?? "");
+  if (!workspaceId) throw createError({ statusCode: 400, message: "workspaceId is required" });
   const db = useDb();
 
   const [meta] = await db
     .select()
     .from(chatSession)
-    .where(and(eq(chatSession.id, id!), eq(chatSession.userId, session.user.id)));
+    .where(and(eq(chatSession.id, id!), eq(chatSession.userId, session.user.id), eq(chatSession.workspaceId, workspaceId)));
 
   if (!meta) throw createError({ statusCode: 404, message: "Session not found" });
 
