@@ -9,7 +9,7 @@ useSeoMeta({
 })
 
 const route = useRoute()
-const workspaceId = route.params.workspace as string
+const workspaceId = computed(() => String(route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
 const username = "marvellous"
 </script>
 
