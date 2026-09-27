@@ -5,6 +5,7 @@ import {
   House,
   MessagesSquare,
   GitPullRequestArrow,
+  FileCode2,
   Settings,
   MessageSquareText,
 } from "@lucide/vue";
@@ -32,6 +33,12 @@ const workspaceNavigation = computed(() => [
     to: `/${username}/${workspace}/review`,
     icon: GitPullRequestArrow,
     tooltip: "Review agent activity",
+  },
+  {
+    name: "Code",
+    to: `/${username}/${workspace}/code`,
+    icon: FileCode2,
+    tooltip: "Browse repository code",
   },
 ]);
 
