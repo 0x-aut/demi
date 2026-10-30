@@ -19,6 +19,7 @@ type Session = {
   createdAt: string
   updatedAt: string
   lastMessagePreview: string | null
+  repositoryName: string | null
 }
 
 const { data, pending, error } = await useFetch<{ sessions: Session[] }>("/api/sessions", {
@@ -122,6 +123,12 @@ function modelLabel(id: string): string {
                   class="unmodified-font-sans mt-0.5 truncate text-xs text-[#9A9A9A]"
                 >
                   {{ session.lastMessagePreview }}
+                </p>
+                <p
+                  v-if="session.repositoryName"
+                  class="unmodified-font-sans mt-0.5 truncate text-xs text-[#9A9A9A]"
+                >
+                  Repository: {{ session.repositoryName }}
                 </p>
               </div>
 

@@ -7,7 +7,7 @@ let _db: ReturnType<typeof drizzle> | null = null;
 export function useDb() {
   if (!_db) {
     const pool = new Pool({
-      connectionString: `${process.env.CONNECTION_STRING}demidb`,
+      connectionString: process.env.CONNECTION_STRING,
       ssl: { rejectUnauthorized: false },
     });
     _db = drizzle(pool, { schema });

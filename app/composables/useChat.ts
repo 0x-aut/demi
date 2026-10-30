@@ -27,6 +27,7 @@ export interface ChatMessage {
 export interface UseChatOptions {
   workspaceId: string
   workspaceAgentId?: string
+  repositoryId?: string
 }
 
 export function useChat(opts: UseChatOptions) {
@@ -87,6 +88,7 @@ export function useChat(opts: UseChatOptions) {
           sessionId:        sessionId.value,
           workspaceId:      opts.workspaceId,
           workspaceAgentId: opts.workspaceAgentId,
+          repositoryId:     opts.repositoryId,
           ...(model ? { model } : {}),
         }),
         signal: controller.signal,
