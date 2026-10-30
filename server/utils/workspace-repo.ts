@@ -1,6 +1,6 @@
 import { Octokit } from "@octokit/rest";
 import { useDb } from "@@/db/index";
-import { workspace } from "@@/db/schema/index";
+import { workspace, repository } from "@@/db/schema/index";
 import { and, eq } from "drizzle-orm";
 import { resolveGithubAccess } from "@@/lib/github-resolver";
 
@@ -11,35 +11,27 @@ export interface RepoContext {
   octokit: Octokit;
 }
 
-/**
- * Given an authenticated userId and workspaceId, resolves the GitHub repository
- * context (owner, repo name, default branch) and returns an authenticated Octokit.
- *
- * Owner is parsed from workspace.repoUrl (e.g. "https://github.com/owner/repo").
- * Default branch comes from workspace.branch (set at creation time).
- *
- * Throws 404 if the workspace is not found, 403 if no GitHub token is available.
- */
 export async function resolveWorkspaceRepo(
   userId: string,
   workspaceId: string,
+  repositoryId: string,
 ): Promise<RepoContext> {
   const db = useDb();
 
   const [ws] = await db
     .select({
-      repoUrl: workspace.repoUrl,
-      repoName: workspace.repoName,
+      repoUrl: repository.url,
+      repoName: repository.name,
       branch: workspace.branch,
     })
     .from(workspace)
-    .where(and(eq(workspace.id, workspaceId), eq(workspace.userId, userId)));
+    .innerJoin(repository, eq(repository.id, repositoryId))
+    .where(and(eq(workspace.id, workspaceId), eq(workspace.userId, userId), eq(repository.id, repositoryId)));
 
   if (!ws) {
-    throw createError({ statusCode: 404, message: "Workspace not found" });
+    throw createError({ statusCode: 404, message: "Workspace or repository not found" });
   }
 
-  // Parse owner from URL: https://github.com/{owner}/{repo}
   const match = ws.repoUrl.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/.*)?$/);
   if (!match) {
     throw createError({
@@ -51,7 +43,7 @@ export async function resolveWorkspaceRepo(
   const owner = match[1];
   const repo = match[2] ?? ws.repoName;
 
-  const token = await resolveGithubAccess(userId, workspaceId);
+  const token = await resolveGithubAccess(userId, repositoryId);
   if (!token) {
     throw createError({
       statusCode: 403,

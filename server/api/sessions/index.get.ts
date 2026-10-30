@@ -14,6 +14,9 @@ export default defineEventHandler(async (event) => {
   if (query.workspaceId) {
     conditions.push(eq(chatSession.workspaceId, query.workspaceId as string));
   }
+  if (query.repositoryId) {
+    conditions.push(eq(chatSession.repositoryId, query.repositoryId as string));
+  }
 
   const sessions = await db
     .select()

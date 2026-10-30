@@ -12,12 +12,13 @@ const props = defineProps<{
 const route = useRoute()
 const workspaceId = computed(() => String(props.workspaceId ?? route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
 
-// selectedModel is lifted here so we can pass it to sendMessage
 const selectedModel = ref("gpt-4o")
+const repositoryId = ref(route.query.repositoryId) // Capture repository ID from query
 
 const { messages, isLoading, requestError, hasMessages, loadSession, sendMessage, abort } = useChat({
   workspaceId:      workspaceId.value,
   workspaceAgentId: props.workspaceAgentId,
+  repositoryId: repositoryId.value,
 })
 
 const message        = ref("")
@@ -209,10 +210,8 @@ onBeforeUnmount(() => abort())
                   <SlidersHorizontal :size="18" color="#5a5a5a" />
                 </button>
 
-                <!-- ModelCard now emits its selection up -->
                 <ElementsModelCard @select="selectedModel = $event" />
 
-                <!-- Stop button while streaming -->
                 <button
                   v-if="isLoading"
                   type="button"
@@ -223,7 +222,6 @@ onBeforeUnmount(() => abort())
                   <span class="h-3 w-3 rounded-sm bg-white" />
                 </button>
 
-                <!-- Send button -->
                 <button
                   v-else
                   type="button"

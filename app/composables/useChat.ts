@@ -27,6 +27,7 @@ export interface ChatMessage {
 export interface UseChatOptions {
   workspaceId: string
   workspaceAgentId?: string
+  repositoryId?: string
 }
 
 export function useChat(opts: UseChatOptions) {
@@ -37,11 +38,8 @@ export function useChat(opts: UseChatOptions) {
 
   const hasMessages = computed(() => messages.value.length > 0)
 
-  // ── Internal helpers ────────────────────────────────────────────────────
-
   let abortController: AbortController | null = null
 
-  /** Append a delta chunk to the last assistant message (or create it). */
   function appendDelta(assistantId: { value: number | null }, delta: string) {
     if (!delta) return
     if (assistantId.value === null) {
@@ -53,14 +51,11 @@ export function useChat(opts: UseChatOptions) {
     if (msg) msg.content += delta
   }
 
-  /** Attach a parsed proposal to the last assistant message. */
   function attachProposal(assistantId: { value: number | null }, proposal: ChangeProposal) {
     if (assistantId.value === null) return
     const msg = messages.value.find((m) => m.id === assistantId.value)
     if (msg) msg.proposal = proposal
   }
-
-  // ── Public API ──────────────────────────────────────────────────────────
 
   async function sendMessage(prompt: string, model?: string): Promise<void> {
     const clean = prompt.trim()
@@ -69,7 +64,6 @@ export function useChat(opts: UseChatOptions) {
     requestError.value = ""
     isLoading.value    = true
 
-    // Push user bubble immediately
     messages.value.push({ id: Date.now(), role: "user", content: clean })
 
     const controller = new AbortController()
@@ -84,9 +78,10 @@ export function useChat(opts: UseChatOptions) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           prompt: clean,
-          sessionId:        sessionId.value,
-          workspaceId:      opts.workspaceId,
+          sessionId: sessionId.value,
+          workspaceId: opts.workspaceId,
           workspaceAgentId: opts.workspaceAgentId,
+          repositoryId: opts.repositoryId,
           ...(model ? { model } : {}),
         }),
         signal: controller.signal,
@@ -97,7 +92,7 @@ export function useChat(opts: UseChatOptions) {
         try {
           const err = (await response.json()) as { message?: string }
           if (err?.message) detail = err.message
-        } catch { /* ignore */ }
+        } catch { }
         throw new Error(detail || `Request failed (HTTP ${response.status}).`)
       }
 
@@ -121,7 +116,6 @@ export function useChat(opts: UseChatOptions) {
             : "Demi could not respond right now. Please try again."
           throw new Error(msg)
         }
-        // "done" — no action needed, stream will end naturally
       }
 
       for (;;) {
@@ -149,7 +143,6 @@ export function useChat(opts: UseChatOptions) {
     } catch (err) {
       if (err instanceof DOMException && err.name === "AbortError") return
 
-      // Remove the empty assistant placeholder if it was created
       if (assistantId.value !== null) {
         const idx = messages.value.findIndex((m) => m.id === assistantId.value)
         if (idx !== -1 && !messages.value[idx]!.content) messages.value.splice(idx, 1)
@@ -158,7 +151,7 @@ export function useChat(opts: UseChatOptions) {
       requestError.value =
         err instanceof Error ? err.message : "Demi could not respond right now. Please try again."
     } finally {
-      try { await reader?.cancel() } catch { /* already closed */ }
+      try { await reader?.cancel() } catch { }
       if (abortController === controller) {
         abortController = null
         isLoading.value = false
