@@ -1,6 +1,6 @@
 import { auth } from "@@/lib/auth";
 import { useDb } from "@@/db/index";
-import { chatSession, workspace, type NewChatSession } from "@@/db/schema/index";
+import { chatSession, workspace, repository, type NewChatSession } from "@@/db/schema/index";
 import { eq, and } from "drizzle-orm";
 import { connectMongo } from "@@/db/mongo";
 import { ChatHistory } from "@@/db/models/chatHistory";
@@ -23,10 +23,11 @@ async function handleSession(opts: {
   userId: string;
   workspaceId: string;
   workspaceAgentId: string | null;
+  repositoryId: string | null;
   model: string;
   db: ReturnType<typeof useDb>;
 }): Promise<{ activeSessionId: string; mongoHistoryId: string }> {
-  const { sessionId, prompt, userId, workspaceId, workspaceAgentId, model, db } = opts;
+  const { sessionId, prompt, userId, workspaceId, workspaceAgentId, repositoryId, model, db } = opts;
 
   if (!sessionId) {
     const historyDoc = await ChatHistory.create({
@@ -40,6 +41,7 @@ async function handleSession(opts: {
       userId,
       workspaceId,
       workspaceAgentId: workspaceAgentId ?? null,
+      repositoryId,
       mongoHistoryId: historyDoc._id.toString(),
       title,
       model,
@@ -137,7 +139,7 @@ export default defineEventHandler(async (event) => {
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
 
   const body = await readBody(event);
-  const { prompt, sessionId, workspaceId, workspaceAgentId } = body;
+  const { prompt, sessionId, workspaceId, workspaceAgentId, repositoryId } = body;
 
   if (!prompt)      throw createError({ statusCode: 400, message: "prompt is required" });
   if (!workspaceId) throw createError({ statusCode: 400, message: "workspaceId is required" });
@@ -166,6 +168,7 @@ export default defineEventHandler(async (event) => {
     userId: session.user.id,
     workspaceId,
     workspaceAgentId: workspaceAgentId ?? null,
+    repositoryId: repositoryId ?? null,
     model,
     db,
   });
