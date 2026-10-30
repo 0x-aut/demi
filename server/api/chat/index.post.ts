@@ -1,6 +1,6 @@
 import { auth } from "@@/lib/auth";
 import { useDb } from "@@/db/index";
-import { chatSession, workspace, type NewChatSession } from "@@/db/schema/index";
+import { chatSession, workspace, repository, type NewChatSession } from "@@/db/schema/index";
 import { eq, and } from "drizzle-orm";
 import { connectMongo } from "@@/db/mongo";
 import { ChatHistory } from "@@/db/models/chatHistory";
@@ -8,7 +8,6 @@ import { useOpenAI } from "@@/lib/openai";
 import { buildSystemPrompt, extractProposal, stripProposalBlock } from "@@/lib/change-planner/planner";
 import { getOctokit } from "@@/server/utils/github";
 
-/** Write a single SSE event to the raw Node response. */
 function sseEvent(res: NodeJS.WritableStream, name: string, data: unknown) {
   const payload = typeof data === "string" ? data : JSON.stringify(data);
   res.write(`event: ${name}\ndata: ${payload}\n\n`);
@@ -16,17 +15,17 @@ function sseEvent(res: NodeJS.WritableStream, name: string, data: unknown) {
 
 type ChatMessage = { role: "user" | "assistant"; content: string };
 
-/** Create a new session (+ its Mongo history doc) or resolve an existing one. */
 async function handleSession(opts: {
   sessionId: string | undefined;
   prompt: string;
   userId: string;
   workspaceId: string;
+  repositoryId: string | null;
   workspaceAgentId: string | null;
   model: string;
   db: ReturnType<typeof useDb>;
 }): Promise<{ activeSessionId: string; mongoHistoryId: string }> {
-  const { sessionId, prompt, userId, workspaceId, workspaceAgentId, model, db } = opts;
+  const { sessionId, prompt, userId, workspaceId, repositoryId, workspaceAgentId, model, db } = opts;
 
   if (!sessionId) {
     const historyDoc = await ChatHistory.create({
@@ -40,6 +39,7 @@ async function handleSession(opts: {
       userId,
       workspaceId,
       workspaceAgentId: workspaceAgentId ?? null,
+      repositoryId,
       mongoHistoryId: historyDoc._id.toString(),
       title,
       model,
@@ -64,7 +64,6 @@ async function handleSession(opts: {
   return { activeSessionId: sessionId, mongoHistoryId: existing.mongoHistoryId };
 }
 
-/** Append a message to the chat history and increment the token counter. */
 async function appendChatMessage(
   sessionId: string,
   role: "user" | "assistant",
@@ -82,16 +81,11 @@ async function appendChatMessage(
   );
 }
 
-/**
- * Fetch the repo file tree for the workspace and build a repo-aware system prompt.
- * Returns null if the workspace has no repo configured or GitHub access fails.
- */
 async function buildRepoSystemPrompt(
   event: Parameters<typeof getOctokit>[0],
   ws: { repoName: string; githubToken: string | null; branch: string },
 ): Promise<string | null> {
   try {
-    // repoName is stored as "owner/repo"
     const parts = ws.repoName.split("/");
     const owner = parts[0];
     const repo  = parts[1];
@@ -99,7 +93,6 @@ async function buildRepoSystemPrompt(
 
     const { octokit } = await getOctokit(event);
 
-    // Resolve SHA for the configured branch (fall back to repo default)
     let branch = ws.branch ?? "main";
     let sha: string;
 
@@ -127,7 +120,6 @@ async function buildRepoSystemPrompt(
 
     return buildSystemPrompt({ owner, repoName: repo, branch, filePaths });
   } catch {
-    // GitHub unavailable / no token — degrade gracefully without system prompt
     return null;
   }
 }
@@ -137,7 +129,7 @@ export default defineEventHandler(async (event) => {
   if (!session) throw createError({ statusCode: 401, message: "Unauthorized" });
 
   const body = await readBody(event);
-  const { prompt, sessionId, workspaceId, workspaceAgentId } = body;
+  const { prompt, sessionId, workspaceId, repositoryId, workspaceAgentId } = body;
 
   if (!prompt)      throw createError({ statusCode: 400, message: "prompt is required" });
   if (!workspaceId) throw createError({ statusCode: 400, message: "workspaceId is required" });
@@ -149,37 +141,34 @@ export default defineEventHandler(async (event) => {
   const db     = useDb();
   const openai = useOpenAI();
 
-  // ── Resolve workspace + repo context ──────────────────────────────────────
   const [ws] = await db
     .select({
-      repoName:    workspace.repoName,
+      repoName:    repository.name,
       githubToken: workspace.githubToken,
       branch:      workspace.branch,
     })
     .from(workspace)
+    .innerJoin(repository, eq(repository.id, repositoryId))
     .where(and(eq(workspace.id, workspaceId), eq(workspace.userId, session.user.id)));
 
-  // ── Session bookkeeping ────────────────────────────────────────────────────
   const { activeSessionId } = await handleSession({
     sessionId,
     prompt,
     userId: session.user.id,
     workspaceId,
+    repositoryId,
     workspaceAgentId: workspaceAgentId ?? null,
     model,
     db,
   });
 
-  // ── Persist user message ───────────────────────────────────────────────────
   await appendChatMessage(activeSessionId, "user", prompt);
 
-  // ── Build context from history ─────────────────────────────────────────────
   const doc = await ChatHistory.findOne({ sessionId: activeSessionId });
   const contextMessages: ChatMessage[] = (doc?.messages ?? [])
     .filter((m) => !m.archived && (m.role === "user" || m.role === "assistant"))
     .map((m) => ({ role: m.role as "user" | "assistant", content: m.content }));
 
-  // ── Build repo-aware system prompt ────────────────────────────────────────
   const systemPromptText = ws
     ? await buildRepoSystemPrompt(event, ws)
     : null;
@@ -189,7 +178,6 @@ export default defineEventHandler(async (event) => {
     ...contextMessages,
   ];
 
-  // ── Open SSE stream to client ──────────────────────────────────────────────
   const nodeRes = event.node.res;
   nodeRes.setHeader("Content-Type", "text/event-stream");
   nodeRes.setHeader("Cache-Control", "no-cache");
@@ -221,12 +209,10 @@ export default defineEventHandler(async (event) => {
     return;
   }
 
-  // ── Extract proposal (if any) and emit as dedicated SSE event ─────────────
   const proposal = extractProposal(reply);
 
   if (proposal) proposal.request = prompt;
 
-  // ── Persist assistant reply ────────────────────────────────────────────────
   const visibleReply = proposal ? stripProposalBlock(reply) : reply;
 
   if (proposal) sseEvent(nodeRes, "proposal", { proposal });
