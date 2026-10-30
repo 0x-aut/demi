@@ -6,6 +6,7 @@ import {
   timestamp,
 } from "drizzle-orm/pg-core";
 import { workspace } from "./workspace";
+import { repository } from "./repository";
 import { workspaceAgent } from "./workspaceAgent";
 
 export const chatSession = pgTable("chat_session", {
@@ -13,6 +14,7 @@ export const chatSession = pgTable("chat_session", {
   userId:             text("user_id").notNull(),
   workspaceId:        uuid("workspace_id").notNull().references(() => workspace.id, { onDelete: "cascade" }),
   workspaceAgentId:   uuid("workspace_agent_id").references(() => workspaceAgent.id, { onDelete: "set null" }),
+  repositoryId:       uuid("repository_id").references(() => repository.id, { onDelete: "set null" }),
   mongoHistoryId:     text("mongo_history_id").notNull(),
   title:              text("title"),
   model:              text("model").notNull().default("gpt-4o"),
