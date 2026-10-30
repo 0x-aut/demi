@@ -11,7 +11,7 @@ useSeoMeta({
 
 const route = useRoute()
 const workspaceId = computed(() => String(route.params.workspace ?? route.params.workspaceId ?? route.path.split("/")[2] ?? ""))
-
+const repositoryId = ref<string | null>(null) // Include repository filter
 type Session = {
   id: string
   title: string | null
@@ -22,7 +22,7 @@ type Session = {
 }
 
 const { data, pending, error } = await useFetch<{ sessions: Session[] }>("/api/sessions", {
-  query: { workspaceId: workspaceId.value },
+  query: { workspaceId: workspaceId.value, repositoryId: repositoryId.value },
 })
 
 const sessions = computed(() => data.value?.sessions ?? [])
